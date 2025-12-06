@@ -432,6 +432,61 @@ const FieldWarning = ({ message }) => {
   );
 };
 
+// Form Selection Page - Choose between different forms
+function FormSelectionPage({ t }) {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const prefilledData = location.state?.prefilledData;
+
+  const forms = [
+    {
+      id: 'ewyp',
+      title: 'Zawiadomienie o wypadku (ZUS EWYP)',
+      description: 'Formularz zawiadomienia o wypadku w drodze do pracy lub z pracy',
+      icon: '📋',
+      route: '/form/ewyp'
+    },
+    {
+      id: 'wyjasnienia',
+      title: 'Wyjaśnienia poszkodowanego',
+      description: 'Protokół wyjaśnień poszkodowanego w sprawie wypadku przy pracy',
+      icon: '📝',
+      route: '/form/wyjasnienia'
+    }
+  ];
+
+  const handleFillForm = (route) => {
+    navigate(route, { state: { prefilledData } });
+  };
+
+  return (
+    <div className="page-container">
+      <h1 className="page-title">Wybierz formularz</h1>
+      <p className="page-description">Wybierz typ formularza, który chcesz wypełnić</p>
+
+      <div className="form-selection-list">
+        {forms.map((form) => (
+          <div key={form.id} className="form-selection-card">
+            <div className="form-selection-header">
+              <div className="form-selection-icon">{form.icon}</div>
+              <div className="form-selection-info">
+                <h3 className="form-selection-title">{form.title}</h3>
+                <p className="form-selection-description">{form.description}</p>
+              </div>
+            </div>
+            <button 
+              className="form-fill-button"
+              onClick={() => handleFillForm(form.route)}
+            >
+              ✏️ Wypełnij
+            </button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // Form Page - Zawiadomienie o wypadku (ZUS EWYP schema)
 function FormPage({ t }) {
   const navigate = useNavigate();
@@ -1240,6 +1295,657 @@ function FormPage({ t }) {
   );
 }
 
+// Wyjaśnienia Poszkodowanego Form Page
+function WyjasnieniaPoszkodowanegoFormPage({ t }) {
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const initialFormData = {
+    imieNazwisko: '',
+    dataUrodzenia: '',
+    miejsceUrodzenia: '',
+    adresZamieszkania: '',
+    zatrudnienie: '',
+    dokumentTozsamosci: '',
+
+    dataWypadku: '',
+    miejsceWypadku: '',
+    godzinaWypadku: '',
+
+    planowanaGodzinaRozpoczeciaPracy: '',
+    planowanaGodzinaZakonczeniaPracy: '',
+
+    rodzajCzynnosciPrzedWypadkiem: '',
+    opisOkolicznosciWypadku: '',
+
+    czyWypadekPodczasObslugiMaszyn: false,
+    nazwaTypUrzadzenia: '',
+    dataProdukcjiUrzadzenia: '',
+    czyUrzadzenieSprawneIUzytkowanePrawidlowo: '',
+
+    czyBylyZabezpieczenia: false,
+    rodzajZabezpieczen: '',
+    czySrodkiWlasciweISprawne: false,
+
+    czyAsekuracja: false,
+    czyObowiazekPracyPrzezDwieOsoby: false,
+
+    czyPrzestrzeganoZasadBHP: false,
+    czyPosiadamPrzygotowanieZawodowe: false,
+
+    czyOdbylemSzkolenieBHP: false,
+    czyPosiadamOceneRyzykaZawodowego: false,
+    stosowaneSrodkiZmniejszajaceRyzyko: '',
+
+    czyWStanieNietrzezwosci: false,
+    stanTrzezwosciBadany: '',
+
+    czyOrganyPodejmowalyCzynnosci: false,
+    organyISzczegoly: '',
+
+    pierwszaPomocData: '',
+    nazwaPlacowkiZdrowia: '',
+    'okresI miejsceHospitalizacji': '',
+    rozpoznanyUraz: '',
+    niezdolnoscDoPracy: '',
+
+    czyNaZwolnieniuWLacuWypadku: false,
+
+    dataPodpisania: '',
+    podpisPoszkodowanego: '',
+    podpisPrzyjmujacego: '',
+  };
+
+  // Deep merge function
+  const deepMerge = (target, source) => {
+    const output = { ...target };
+    if (isObject(target) && isObject(source)) {
+      Object.keys(source).forEach(key => {
+        if (isObject(source[key])) {
+          if (!(key in target)) {
+            Object.assign(output, { [key]: source[key] });
+          } else {
+            output[key] = deepMerge(target[key], source[key]);
+          }
+        } else {
+          Object.assign(output, { [key]: source[key] });
+        }
+      });
+    }
+    return output;
+  };
+
+  const isObject = (item) => {
+    return item && typeof item === 'object' && !Array.isArray(item);
+  };
+
+  const prefilledData = location.state?.prefilledData;
+  const startingFormData = prefilledData ? deepMerge(initialFormData, prefilledData) : initialFormData;
+
+  const [formData, setFormData] = useState(startingFormData);
+  const [status, setStatus] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState({});
+
+  useEffect(() => {
+    if (prefilledData) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      setStatus({ 
+        type: 'info', 
+        message: '📋 Formularz został wypełniony danymi ze skanu. Sprawdź i popraw dane przed wysłaniem.' 
+      });
+    }
+  }, [prefilledData]);
+
+  const updateField = (field, value) => {
+    setFormData((prev) => ({
+      ...prev,
+      [field]: value
+    }));
+    setFieldErrors((prev) => {
+      if (!prev[field]) return prev;
+      const next = { ...prev };
+      delete next[field];
+      return next;
+    });
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setStatus(null);
+
+    try {
+      // Remove empty fields
+      const payload = Object.fromEntries(
+        Object.entries(formData).filter(([_, value]) => value !== '' && value !== null)
+      );
+
+      const response = await fetch(`${API_URL}/form/wyjasnienia`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const data = await response.json();
+
+      if (data.success) {
+        setStatus({ type: 'success', message: data.message || 'Formularz został wysłany pomyślnie!' });
+        if (data.data?.pdf_filename) {
+          navigate('/success-pdf', {
+            state: {
+              pdfFilename: data.data.pdf_filename,
+              peselFolderPath: data.data.pesel_folder_path,
+              validationComment: data.data.comment
+            }
+          });
+        }
+      } else {
+        setStatus({ type: 'error', message: data.message || 'Wystąpił błąd podczas wysyłania formularza.' });
+        if (data.data?.fieldErrors) {
+          setFieldErrors(data.data.fieldErrors);
+        }
+      }
+    } catch (error) {
+      setStatus({ type: 'error', message: 'Wystąpił błąd podczas wysyłania formularza.' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="page-container">
+      <h1 className="page-title">Wyjaśnienia poszkodowanego</h1>
+
+      {status && (
+        <div className={`status-message status-${status.type}`}>
+          {status.message}
+        </div>
+      )}
+
+      <div className="form-card">
+        <form onSubmit={handleSubmit}>
+          {/* 1. Dane osobowe poszkodowanego */}
+          <h2 className="section-title">Dane osobowe poszkodowanego</h2>
+
+          <div className="form-group">
+            <label className="form-label">Imię i nazwisko</label>
+            <input
+              type="text"
+              className={`form-input ${fieldErrors.imieNazwisko ? 'form-input-error' : ''}`}
+              value={formData.imieNazwisko}
+              onChange={(e) => updateField('imieNazwisko', e.target.value)}
+              required
+            />
+            {fieldErrors.imieNazwisko && (
+              <span className="field-error-text">{fieldErrors.imieNazwisko}</span>
+            )}
+          </div>
+
+          <div className="form-row">
+            <div className="form-group">
+              <label className="form-label">Data urodzenia</label>
+              <input
+                type="date"
+                className={`form-input ${fieldErrors.dataUrodzenia ? 'form-input-error' : ''}`}
+                value={formData.dataUrodzenia}
+                onChange={(e) => updateField('dataUrodzenia', e.target.value)}
+                required
+              />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Miejsce urodzenia</label>
+              <input
+                type="text"
+                className={`form-input ${fieldErrors.miejsceUrodzenia ? 'form-input-error' : ''}`}
+                value={formData.miejsceUrodzenia}
+                onChange={(e) => updateField('miejsceUrodzenia', e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Adres zamieszkania</label>
+            <input
+              type="text"
+              className={`form-input ${fieldErrors.adresZamieszkania ? 'form-input-error' : ''}`}
+              value={formData.adresZamieszkania}
+              onChange={(e) => updateField('adresZamieszkania', e.target.value)}
+              required
+            />
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Zatrudnienie (nazwa pracodawcy, stanowisko)</label>
+            <input
+              type="text"
+              className={`form-input ${fieldErrors.zatrudnienie ? 'form-input-error' : ''}`}
+              value={formData.zatrudnienie}
+              onChange={(e) => updateField('zatrudnienie', e.target.value)}
+            />
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Dokument tożsamości (rodzaj, seria i numer)</label>
+            <input
+              type="text"
+              className={`form-input ${fieldErrors.dokumentTozsamosci ? 'form-input-error' : ''}`}
+              value={formData.dokumentTozsamosci}
+              onChange={(e) => updateField('dokumentTozsamosci', e.target.value)}
+            />
+          </div>
+
+          {/* 2. Informacje o wypadku */}
+          <h2 className="section-title">Informacje o wypadku</h2>
+
+          <div className="form-row">
+            <div className="form-group">
+              <label className="form-label">Data wypadku</label>
+              <input
+                type="date"
+                className={`form-input ${fieldErrors.dataWypadku ? 'form-input-error' : ''}`}
+                value={formData.dataWypadku}
+                onChange={(e) => updateField('dataWypadku', e.target.value)}
+                required
+              />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Godzina wypadku</label>
+              <input
+                type="time"
+                className={`form-input ${fieldErrors.godzinaWypadku ? 'form-input-error' : ''}`}
+                value={formData.godzinaWypadku}
+                onChange={(e) => updateField('godzinaWypadku', e.target.value)}
+                required
+              />
+            </div>
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Miejsce wypadku</label>
+            <input
+              type="text"
+              className={`form-input ${fieldErrors.miejsceWypadku ? 'form-input-error' : ''}`}
+              value={formData.miejsceWypadku}
+              onChange={(e) => updateField('miejsceWypadku', e.target.value)}
+              required
+            />
+          </div>
+
+          <div className="form-row">
+            <div className="form-group">
+              <label className="form-label">Planowana godzina rozpoczęcia pracy</label>
+              <input
+                type="time"
+                className={`form-input ${fieldErrors.planowanaGodzinaRozpoczeciaPracy ? 'form-input-error' : ''}`}
+                value={formData.planowanaGodzinaRozpoczeciaPracy}
+                onChange={(e) => updateField('planowanaGodzinaRozpoczeciaPracy', e.target.value)}
+              />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Planowana godzina zakończenia pracy</label>
+              <input
+                type="time"
+                className={`form-input ${fieldErrors.planowanaGodzinaZakonczeniaPracy ? 'form-input-error' : ''}`}
+                value={formData.planowanaGodzinaZakonczeniaPracy}
+                onChange={(e) => updateField('planowanaGodzinaZakonczeniaPracy', e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Rodzaj czynności wykonywanej przed wypadkiem</label>
+            <input
+              type="text"
+              className={`form-input ${fieldErrors.rodzajCzynnosciPrzedWypadkiem ? 'form-input-error' : ''}`}
+              value={formData.rodzajCzynnosciPrzedWypadkiem}
+              onChange={(e) => updateField('rodzajCzynnosciPrzedWypadkiem', e.target.value)}
+            />
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Opis okoliczności wypadku</label>
+            <textarea
+              className={`form-textarea ${fieldErrors.opisOkolicznosciWypadku ? 'form-input-error' : ''}`}
+              value={formData.opisOkolicznosciWypadku}
+              onChange={(e) => updateField('opisOkolicznosciWypadku', e.target.value)}
+              required
+            />
+          </div>
+
+          {/* 3. Maszyny i urządzenia */}
+          <h2 className="section-title">Maszyny i urządzenia</h2>
+
+          <div className="form-group">
+            <label className="form-label">
+              <input
+                type="checkbox"
+                checked={formData.czyWypadekPodczasObslugiMaszyn}
+                onChange={(e) => updateField('czyWypadekPodczasObslugiMaszyn', e.target.checked)}
+              />
+              {' '}Czy wypadek nastąpił podczas obsługi maszyn lub urządzeń?
+            </label>
+          </div>
+
+          {formData.czyWypadekPodczasObslugiMaszyn && (
+            <>
+              <div className="form-group">
+                <label className="form-label">Nazwa i typ urządzenia</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  value={formData.nazwaTypUrzadzenia}
+                  onChange={(e) => updateField('nazwaTypUrzadzenia', e.target.value)}
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Data produkcji urządzenia</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  value={formData.dataProdukcjiUrzadzenia}
+                  onChange={(e) => updateField('dataProdukcjiUrzadzenia', e.target.value)}
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Czy urządzenie było sprawne i użytkowane prawidłowo?</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  value={formData.czyUrzadzenieSprawneIUzytkowanePrawidlowo}
+                  onChange={(e) => updateField('czyUrzadzenieSprawneIUzytkowanePrawidlowo', e.target.value)}
+                />
+              </div>
+            </>
+          )}
+
+          {/* 4. Zabezpieczenia */}
+          <h2 className="section-title">Zabezpieczenia i środki ochrony</h2>
+
+          <div className="form-group">
+            <label className="form-label">
+              <input
+                type="checkbox"
+                checked={formData.czyBylyZabezpieczenia}
+                onChange={(e) => updateField('czyBylyZabezpieczenia', e.target.checked)}
+              />
+              {' '}Czy były stosowane zabezpieczenia/środki ochrony?
+            </label>
+          </div>
+
+          {formData.czyBylyZabezpieczenia && (
+            <>
+              <div className="form-group">
+                <label className="form-label">Rodzaj zastosowanych zabezpieczeń</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  value={formData.rodzajZabezpieczen}
+                  onChange={(e) => updateField('rodzajZabezpieczen', e.target.value)}
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">
+                  <input
+                    type="checkbox"
+                    checked={formData.czySrodkiWlasciweISprawne}
+                    onChange={(e) => updateField('czySrodkiWlasciweISprawne', e.target.checked)}
+                  />
+                  {' '}Czy środki były właściwe i sprawne?
+                </label>
+              </div>
+            </>
+          )}
+
+          <div className="form-group">
+            <label className="form-label">
+              <input
+                type="checkbox"
+                checked={formData.czyAsekuracja}
+                onChange={(e) => updateField('czyAsekuracja', e.target.checked)}
+              />
+              {' '}Czy była stosowana asekuracja?
+            </label>
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">
+              <input
+                type="checkbox"
+                checked={formData.czyObowiazekPracyPrzezDwieOsoby}
+                onChange={(e) => updateField('czyObowiazekPracyPrzezDwieOsoby', e.target.checked)}
+              />
+              {' '}Czy istniał obowiązek pracy przez dwie osoby?
+            </label>
+          </div>
+
+          {/* 5. BHP i szkolenia */}
+          <h2 className="section-title">BHP i szkolenia</h2>
+
+          <div className="form-group">
+            <label className="form-label">
+              <input
+                type="checkbox"
+                checked={formData.czyPrzestrzeganoZasadBHP}
+                onChange={(e) => updateField('czyPrzestrzeganoZasadBHP', e.target.checked)}
+              />
+              {' '}Czy przestrzegano zasad BHP?
+            </label>
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">
+              <input
+                type="checkbox"
+                checked={formData.czyPosiadamPrzygotowanieZawodowe}
+                onChange={(e) => updateField('czyPosiadamPrzygotowanieZawodowe', e.target.checked)}
+              />
+              {' '}Czy posiadam przygotowanie zawodowe do wykonywanych czynności?
+            </label>
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">
+              <input
+                type="checkbox"
+                checked={formData.czyOdbylemSzkolenieBHP}
+                onChange={(e) => updateField('czyOdbylemSzkolenieBHP', e.target.checked)}
+              />
+              {' '}Czy odbyłem szkolenie BHP?
+            </label>
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">
+              <input
+                type="checkbox"
+                checked={formData.czyPosiadamOceneRyzykaZawodowego}
+                onChange={(e) => updateField('czyPosiadamOceneRyzykaZawodowego', e.target.checked)}
+              />
+              {' '}Czy posiadam ocenę ryzyka zawodowego?
+            </label>
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Stosowane środki zmniejszające ryzyko</label>
+            <textarea
+              className="form-textarea"
+              value={formData.stosowaneSrodkiZmniejszajaceRyzyko}
+              onChange={(e) => updateField('stosowaneSrodkiZmniejszajaceRyzyko', e.target.value)}
+            />
+          </div>
+
+          {/* 6. Stan trzeźwości */}
+          <h2 className="section-title">Stan trzeźwości</h2>
+
+          <div className="form-group">
+            <label className="form-label">
+              <input
+                type="checkbox"
+                checked={formData.czyWStanieNietrzezwosci}
+                onChange={(e) => updateField('czyWStanieNietrzezwosci', e.target.checked)}
+              />
+              {' '}Czy byłem w stanie nietrzeźwości lub pod wpływem środków odurzających?
+            </label>
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Czy i jak badano stan trzeźwości?</label>
+            <select
+              className="form-input"
+              value={formData.stanTrzezwosciBadany}
+              onChange={(e) => updateField('stanTrzezwosciBadany', e.target.value)}
+            >
+              <option value="">-- Wybierz --</option>
+              <option value="badany_przez_policje">Badany przez policję</option>
+              <option value="badany_podczas_pierwszej_pomocy">Badany podczas pierwszej pomocy</option>
+              <option value="nie_badany">Nie badany</option>
+            </select>
+          </div>
+
+          {/* 7. Postępowanie organów */}
+          <h2 className="section-title">Postępowanie organów</h2>
+
+          <div className="form-group">
+            <label className="form-label">
+              <input
+                type="checkbox"
+                checked={formData.czyOrganyPodejmowalyCzynnosci}
+                onChange={(e) => updateField('czyOrganyPodejmowalyCzynnosci', e.target.checked)}
+              />
+              {' '}Czy organy podejmowały czynności w związku z wypadkiem?
+            </label>
+          </div>
+
+          {formData.czyOrganyPodejmowalyCzynnosci && (
+            <div className="form-group">
+              <label className="form-label">Jakie organy i szczegóły czynności</label>
+              <textarea
+                className="form-textarea"
+                value={formData.organyISzczegoly}
+                onChange={(e) => updateField('organyISzczegoly', e.target.value)}
+              />
+            </div>
+          )}
+
+          {/* 8. Pierwsza pomoc i leczenie */}
+          <h2 className="section-title">Pierwsza pomoc i leczenie</h2>
+
+          <div className="form-group">
+            <label className="form-label">Data udzielenia pierwszej pomocy</label>
+            <input
+              type="text"
+              className="form-input"
+              value={formData.pierwszaPomocData}
+              onChange={(e) => updateField('pierwszaPomocData', e.target.value)}
+              placeholder="np. 2025-12-06"
+            />
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Nazwa placówki zdrowia</label>
+            <input
+              type="text"
+              className="form-input"
+              value={formData.nazwaPlacowkiZdrowia}
+              onChange={(e) => updateField('nazwaPlacowkiZdrowia', e.target.value)}
+            />
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Okres i miejsce hospitalizacji</label>
+            <input
+              type="text"
+              className="form-input"
+              value={formData['okresI miejsceHospitalizacji']}
+              onChange={(e) => updateField('okresI miejsceHospitalizacji', e.target.value)}
+            />
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Rozpoznany uraz</label>
+            <input
+              type="text"
+              className="form-input"
+              value={formData.rozpoznanyUraz}
+              onChange={(e) => updateField('rozpoznanyUraz', e.target.value)}
+            />
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Niezdolność do pracy</label>
+            <input
+              type="text"
+              className="form-input"
+              value={formData.niezdolnoscDoPracy}
+              onChange={(e) => updateField('niezdolnoscDoPracy', e.target.value)}
+              placeholder="np. od 2025-12-06 do 2025-12-20"
+            />
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">
+              <input
+                type="checkbox"
+                checked={formData.czyNaZwolnieniuWLacuWypadku}
+                onChange={(e) => updateField('czyNaZwolnieniuWLacuWypadku', e.target.checked)}
+              />
+              {' '}Czy jestem na zwolnieniu lekarskim w związku z wypadkiem?
+            </label>
+          </div>
+
+          {/* 9. Podpisy */}
+          <h2 className="section-title">Podpisy</h2>
+
+          <div className="form-group">
+            <label className="form-label">Data podpisania</label>
+            <input
+              type="date"
+              className="form-input"
+              value={formData.dataPodpisania}
+              onChange={(e) => updateField('dataPodpisania', e.target.value)}
+            />
+          </div>
+
+          <div className="form-row">
+            <div className="form-group">
+              <label className="form-label">Podpis poszkodowanego</label>
+              <input
+                type="text"
+                className="form-input"
+                value={formData.podpisPoszkodowanego}
+                onChange={(e) => updateField('podpisPoszkodowanego', e.target.value)}
+              />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Podpis przyjmującego</label>
+              <input
+                type="text"
+                className="form-input"
+                value={formData.podpisPrzyjmujacego}
+                onChange={(e) => updateField('podpisPrzyjmujacego', e.target.value)}
+              />
+            </div>
+          </div>
+
+          <button type="submit" className="submit-button" disabled={loading}>
+            {loading ? 'Wysyłanie...' : 'Wyślij formularz'}
+          </button>
+        </form>
+
+        <div className="json-preview-card">
+          <h3 className="section-subtitle">Podgląd danych JSON</h3>
+          <pre className="json-preview">
+            {JSON.stringify(formData, null, 2)}
+          </pre>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // Voice Page (Placeholder)
 function VoicePage({ t }) {
   return (
@@ -1423,19 +2129,25 @@ function App() {
   const { t } = useTranslation(lang);
   const location = useLocation();
   const isHome = location.pathname === '/';
+  const isFormSubpage = location.pathname.startsWith('/form/');
 
   return (
     <div className="app-container">
       {!isHome && (
         <nav className="nav-bar">
           <Link to="/" className="nav-home">← {t('navigation.home')}</Link>
+          {isFormSubpage && (
+            <Link to="/form" className="nav-back-forms">← Wybór formularzy</Link>
+          )}
         </nav>
       )}
 
       <Routes>
         <Route path="/" element={<HomePage t={t} />} />
         <Route path="/skan" element={<SkanPage t={t} />} />
-        <Route path="/form" element={<FormPage t={t} />} />
+        <Route path="/form" element={<FormSelectionPage t={t} />} />
+        <Route path="/form/ewyp" element={<FormPage t={t} />} />
+        <Route path="/form/wyjasnienia" element={<WyjasnieniaPoszkodowanegoFormPage t={t} />} />
         <Route path="/voice" element={<VoicePage t={t} />} />
         <Route path="/success" element={<SuccessPage t={t} />} />
         <Route path="/success-pdf" element={<SuccessPdfPage t={t} />} />
