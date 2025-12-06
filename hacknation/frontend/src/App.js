@@ -539,7 +539,16 @@ function FormPage({ t }) {
       if (data.success && data.data?.valid) {
         setStatus({ type: 'success', message: data.message || t('form.success') });
         setValidationErrors(null);
-        // Form is valid - could reset or proceed to next step
+        // Form is valid - navigate to success PDF page
+        if (data.data.pdf_filename) {
+          navigate('/success-pdf', {
+            state: {
+              pdfFilename: data.data.pdf_filename,
+              peselFolderPath: data.data.pesel_folder_path,
+              validationComment: data.data.comment
+            }
+          });
+        }
       } else if (data.data && !data.data.valid) {
         // Form validation failed - show errors
         setValidationErrors({
@@ -1109,7 +1118,82 @@ function VoicePage({ t }) {
   );
 }
 
-// Success Page
+// Success Page with PDF Preview (PDF is automatically saved to PESEL folder on backend)
+function SuccessPdfPage({ t }) {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { pdfFilename, peselFolderPath, validationComment } = location.state || {};
+
+  // Redirect if no PDF filename provided
+  useEffect(() => {
+    if (!pdfFilename) {
+      navigate('/form');
+    }
+  }, [pdfFilename, navigate]);
+
+  if (!pdfFilename) {
+    return null;
+  }
+
+  // Use the PESEL folder path if available, otherwise fall back to filled_forms
+  const pdfViewUrl = peselFolderPath 
+    ? `${API_URL}/form/view/${peselFolderPath}`
+    : `${API_URL}/form/view-filled/${pdfFilename}`;
+  
+  const pdfDownloadUrl = peselFolderPath
+    ? `${API_URL}/form/download-from-pesel/${peselFolderPath}`
+    : `${API_URL}/form/download/${pdfFilename}`;
+
+  return (
+    <div className="page-container success-pdf-page">
+      {/* Success Header */}
+      <div className="success-header">
+        <div className="success-icon">✓</div>
+        <h1 className="success-title">{t('success.title')}</h1>
+        <p className="success-subtitle">{t('success.subtitle')}</p>
+      </div>
+
+      {/* Validation Comment */}
+      {validationComment && (
+        <div className="validation-success-banner">
+          <span className="validation-success-icon">✓</span>
+          <p className="validation-success-text">{validationComment}</p>
+        </div>
+      )}
+
+      {/* PDF Preview Section */}
+      <div className="pdf-preview-section">
+        <h2 className="section-title">{t('success.pdf_preview')}</h2>
+        <div className="pdf-embed-container">
+          <iframe
+            src={`${pdfViewUrl}#toolbar=0`}
+            title="PDF Preview"
+            className="pdf-iframe"
+          />
+        </div>
+      </div>
+
+      {/* Navigation Buttons */}
+      <div className="success-navigation">
+        <a 
+          href={pdfDownloadUrl} 
+          className="nav-action-button download-button"
+          download={pdfFilename}
+        >
+          ⬇️ {t('success.download_pdf')}
+        </a>
+        <Link to="/form" className="nav-action-button primary-button">
+          📝 {t('success.new_form')}
+        </Link>
+        <Link to="/" className="nav-action-button secondary-button">
+          🏠 {t('success.go_home')}
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+// Legacy Success Page (kept for backwards compatibility)
 function SuccessPage({ t }) {
   const location = useLocation();
   const filename = location.state?.filename || 'formularz.json';
@@ -1218,6 +1302,7 @@ function App() {
         <Route path="/form" element={<FormPage t={t} />} />
         <Route path="/voice" element={<VoicePage t={t} />} />
         <Route path="/success" element={<SuccessPage t={t} />} />
+        <Route path="/success-pdf" element={<SuccessPdfPage t={t} />} />
       </Routes>
     </div>
   );

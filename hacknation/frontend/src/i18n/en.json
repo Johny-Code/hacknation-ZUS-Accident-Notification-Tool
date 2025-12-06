@@ -9,6 +9,15 @@
     "voicechat": "Voice Assistant",
     "home": "Home"
   },
+  "success": {
+    "title": "Form validated successfully!",
+    "subtitle": "Your accident notification has been validated and PDF has been generated",
+    "pdf_preview": "Generated PDF preview",
+    "saved_confirmation": "PDF has been automatically saved in the system",
+    "download_pdf": "Download PDF",
+    "new_form": "Fill another form",
+    "go_home": "Back to home"
+  },
   "skan": {
     "title": "Upload document scan",
     "description": "Upload a PDF document related to the accident",
