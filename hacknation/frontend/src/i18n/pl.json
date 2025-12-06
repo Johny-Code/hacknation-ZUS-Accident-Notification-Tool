@@ -9,6 +9,15 @@
     "voicechat": "Asystent głosowy",
     "home": "Strona główna"
   },
+  "success": {
+    "title": "Formularz zweryfikowany pomyślnie!",
+    "subtitle": "Twoje zawiadomienie o wypadku zostało zweryfikowane i wygenerowano PDF",
+    "pdf_preview": "Podgląd wygenerowanego PDF",
+    "saved_confirmation": "PDF został automatycznie zapisany w systemie",
+    "download_pdf": "Pobierz PDF",
+    "new_form": "Wypełnij kolejny formularz",
+    "go_home": "Wróć do strony głównej"
+  },
   "skan": {
     "title": "Prześlij skan dokumentu",
     "description": "Załaduj skan dokumentu PDF związanego z wypadkiem",
