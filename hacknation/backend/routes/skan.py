@@ -50,19 +50,20 @@ async def upload_scan(
     with open(file_path, "wb") as f:
         f.write(contents)
     
-    # Process the PDF with OCR
+    # Process the PDF with OCR (includes document type detection)
     ocr_result = process_pdf_ocr(file_path)
     
     return ScanResponse(
         success=True,
         message=f"PDF '{file.filename}' uploaded and processed successfully",
-        ocr_result=ocr_result,
+        ocr_result=ocr_result["data"],
         data={
             "filename": file.filename,
             "file_id": file_id,
             "user_id": user_id,
             "size_bytes": file_size,
-            "stored_path": str(file_path)
+            "stored_path": str(file_path),
+            "document_type": ocr_result["document_type"]
         }
     )
 

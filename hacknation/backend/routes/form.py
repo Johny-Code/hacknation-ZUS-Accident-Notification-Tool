@@ -47,7 +47,7 @@ async def submit_zawiadomienie(form_data: ZawiadomienieOWypadku):
     json_filename = f"{timestamp}.json"
     json_filepath = FILLED_FORMS_DIR / json_filename
 
-    with open(filepath, "w", encoding="utf-8") as f:
+    with open(json_filepath, "w", encoding="utf-8") as f:
         json.dump(form_dict, f, ensure_ascii=False, indent=2)
 
     # Validate with LLM
@@ -126,12 +126,14 @@ async def submit_zawiadomienie(form_data: ZawiadomienieOWypadku):
 
     return FormResponse(
         success=True,
-        message=f"Zawiadomienie o wypadku saved as {filename}. Dane są poprawne.",
+        message="Formularz został zweryfikowany pomyślnie i PDF został wygenerowany.",
         data={
-            "form": form_dict,
-            "filename": filename,
-            "errors": [],
-        },
+            "valid": True,
+            "comment": validity_check.comment,
+            "fieldErrors": field_errors,
+            "json_filename": json_filename,
+            "pdf_filename": pdf_filename
+        }
     )
 
 
@@ -156,14 +158,6 @@ async def validate_latest_form():
         success=False,
         message=f"Plik {result['filename']} zawiera błędy walidacji.",
         data={"filename": result["filename"], "errors": result["errors"]},
-        message="Formularz został zweryfikowany pomyślnie i PDF został wygenerowany.",
-        data={
-            "valid": True,
-            "comment": validity_check.comment,
-            "fieldErrors": field_errors,
-            "json_filename": json_filename,
-            "pdf_filename": pdf_filename
-        }
     )
 
 
