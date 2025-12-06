@@ -1,0 +1,169 @@
+{
+  "daneOsobyPoszkodowanej": {
+    "pesel": "90010112345",
+    "dokumentTozsamosci": {
+      "rodzaj": "Dowód osobisty",
+      "seriaINumer": "ABC123456"
+    },
+    "imie": "Jan",
+    "nazwisko": "Kowalski",
+    "dataUrodzenia": "1990-01-01",
+    "miejsceUrodzenia": "Warszawa",
+    "numerTelefonu": "500123456"
+  },
+  "adresZamieszkaniaOsobyPoszkodowanej": {
+    "ulica": "ul. Marszałkowska",
+    "numerDomu": "10",
+    "numerLokalu": "5",
+    "kodPocztowy": "00-001",
+    "miejscowosc": "Warszawa",
+    "nazwaPanstwa": "Polska"
+  },
+  "adresOstatniegoMiejscaZamieszkaniaWPolsceLubPobytuPoszkodowanego": {
+    "ulica": "",
+    "numerDomu": "",
+    "numerLokalu": "",
+    "kodPocztowy": "",
+    "miejscowosc": ""
+  },
+  "adresDoKorespondencjiOsobyPoszkodowanej": {
+    "sposobKorespondencji": "adres",
+    "ulica": "ul. Marszałkowska",
+    "numerDomu": "10",
+    "numerLokalu": "5",
+    "kodPocztowy": "00-001",
+    "miejscowosc": "Warszawa",
+    "nazwaPanstwa": "Polska"
+  },
+  "adresMiejscaProwadzeniaPozarolniczejDzialalnosci": {
+    "ulica": "",
+    "numerDomu": "",
+    "numerLokalu": "",
+    "kodPocztowy": "",
+    "miejscowosc": "",
+    "numerTelefonu": ""
+  },
+  "adresSprawowaniaOpiekiNadDzieckiemDoLat3": {
+    "ulica": "",
+    "numerDomu": "",
+    "numerLokalu": "",
+    "kodPocztowy": "",
+    "miejscowosc": "",
+    "numerTelefonu": ""
+  },
+  "daneOsobyKtoraZawiadamia": {
+    "jestPoszkodowanym": true,
+    "pesel": "",
+    "dokumentTozsamosci": {
+      "rodzaj": "",
+      "seriaINumer": ""
+    },
+    "imie": "",
+    "nazwisko": "",
+    "dataUrodzenia": "",
+    "numerTelefonu": ""
+  },
+  "adresZamieszkaniaOsobyKtoraZawiadamia": {
+    "ulica": "",
+    "numerDomu": "",
+    "numerLokalu": "",
+    "kodPocztowy": "",
+    "miejscowosc": "",
+    "nazwaPanstwa": ""
+  },
+  "adresOstatniegoMiejscaZamieszkaniaWPolsceLubPobytuOsobyKtoraZawiadamia": {
+    "ulica": "",
+    "numerDomu": "",
+    "numerLokalu": "",
+    "kodPocztowy": "",
+    "miejscowosc": ""
+  },
+  "adresDoKorespondencjiOsobyKtoraZawiadamia": {
+    "sposobKorespondencji": "",
+    "ulica": "",
+    "numerDomu": "",
+    "numerLokalu": "",
+    "kodPocztowy": "",
+    "miejscowosc": "",
+    "nazwaPanstwa": ""
+  },
+  "informacjaOWypadku": {
+    "dataWypadku": "2025-12-05",
+    "godzinaWypadku": "09:30",
+    "miejsceWypadku": "Magazyn firmy XYZ, ul. Przemysłowa 15, Warszawa",
+    "planowanaGodzinaRozpoczeciaPracy": "08:00",
+    "planowanaGodzinaZakonczeniaPracy": "16:00",
+    "rodzajDoznanychUrazow": "Złamanie przedramienia prawego",
+    "opisOkolicznosciMiejscaIPrzyczyn": "Wyjebałem się",
+    "pierwszaPomocUdzielona": true,
+    "placowkaUdzielajacaPierwszejPomocy": "Szpitalny Oddział Ratunkowy, Szpital Bielański, Warszawa",
+    "organProwadzacyPostepowanie": "",
+    "wypadekPodczasObslugiMaszynLubUrzadzen": false,
+    "opisStanuMaszynyIUzytkowania": "",
+    "maszynaPosiadaAtestLubDeklaracjeZgodnosci": false,
+    "maszynaWpisanaDoEwidencjiSrodkowTrwalych": false
+  },
+  "daneSwiadkowWypadku": [
+    {
+      "imie": "Anna",
+      "nazwisko": "Nowak",
+      "adres": {
+        "ulica": "ul. Kwiatowa",
+        "numerDomu": "5",
+        "numerLokalu": "",
+        "kodPocztowy": "00-002",
+        "miejscowosc": "Warszawa",
+        "nazwaPanstwa": "Polska"
+      }
+    },
+    {
+      "imie": "",
+      "nazwisko": "",
+      "adres": {
+        "ulica": "",
+        "numerDomu": "",
+        "numerLokalu": "",
+        "kodPocztowy": "",
+        "miejscowosc": "",
+        "nazwaPanstwa": ""
+      }
+    },
+    {
+      "imie": "",
+      "nazwisko": "",
+      "adres": {
+        "ulica": "",
+        "numerDomu": "",
+        "numerLokalu": "",
+        "kodPocztowy": "",
+        "miejscowosc": "",
+        "nazwaPanstwa": ""
+      }
+    }
+  ],
+  "zalaczniki": {
+    "kartaInformacyjnaLubZaswiadczeniePierwszejPomocy": true,
+    "postanowienieProkuratury": false,
+    "dokumentyDotyczaceZgonu": false,
+    "dokumentyPotwierdzajacePrawoDoKartyWypadkuDlaInnejOsoby": false,
+    "inneDokumentyOpis": ""
+  },
+  "dokumentyDoDostarczeniaPozniej": {
+    "dataDo": "",
+    "listaDokumentow": [
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      ""
+    ]
+  },
+  "sposobOdbioruOdpowiedzi": "poczta tradycyjna",
+  "oswiadczenie": {
+    "dataZlozenia": "2025-12-06",
+    "podpis": "Jan Kowalski"
+  }
+}
