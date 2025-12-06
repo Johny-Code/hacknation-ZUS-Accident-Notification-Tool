@@ -7,6 +7,7 @@
     "skan": "Skan",
     "formularz": "Formularz",
     "voicechat": "Asystent głosowy",
+    "pracownik": "Portal Pracownika",
     "home": "Strona główna"
   },
   "success": {
@@ -136,5 +137,18 @@
   "voice": {
     "title": "Asystent głosowy",
     "description": "Wkrótce dostępny - zgłoś wypadek rozmową z AI"
+  },
+  "pracownik": {
+    "title": "Portal Pracownika ZUS",
+    "description": "Przeglądaj dokumenty zgłoszeń według numeru PESEL",
+    "folders_title": "Foldery pracowników",
+    "empty_folders": "Brak folderów z dokumentami",
+    "empty_folder": "Ten folder jest pusty",
+    "back_to_folders": "Wróć do listy folderów",
+    "pdf_count": "dokumentów PDF",
+    "pdf_preview": "Podgląd dokumentu",
+    "analyze_ai": "Analiza AI",
+    "analyzing": "Analizowanie...",
+    "loading": "Ładowanie..."
   }
 }

@@ -7,6 +7,7 @@
     "skan": "Scan",
     "formularz": "Form",
     "voicechat": "Voice Assistant",
+    "pracownik": "Employee Portal",
     "home": "Home"
   },
   "success": {
@@ -120,5 +121,18 @@
   "voice": {
     "title": "Voice Assistant",
     "description": "Coming soon - report accident by talking to AI"
+  },
+  "pracownik": {
+    "title": "ZUS Employee Portal",
+    "description": "Browse documents by PESEL number",
+    "folders_title": "Employee folders",
+    "empty_folders": "No document folders found",
+    "empty_folder": "This folder is empty",
+    "back_to_folders": "Back to folder list",
+    "pdf_count": "PDF documents",
+    "pdf_preview": "Preview",
+    "analyze_ai": "AI Analysis",
+    "analyzing": "Analyzing...",
+    "loading": "Loading..."
   }
 }
