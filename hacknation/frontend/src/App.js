@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom';
 
 // Import translations
@@ -1956,15 +1956,450 @@ function WyjasnieniaPoszkodowanegoFormPage({ t }) {
   );
 }
 
-// Voice Page (Placeholder)
+// Voice Page - Full Implementation with OpenAI Realtime API
 function VoicePage({ t }) {
+  const navigate = useNavigate();
+  
+  // State management
+  const [connectionStatus, setConnectionStatus] = useState('disconnected'); // disconnected, connecting, connected, error
+  const [isListening, setIsListening] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [transcript, setTranscript] = useState([]);
+  const [formData, setFormData] = useState(null);
+  const [error, setError] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Refs for WebRTC
+  const peerConnectionRef = useRef(null);
+  const dataChannelRef = useRef(null);
+  const audioContextRef = useRef(null);
+  const audioElementRef = useRef(null);
+  const mediaStreamRef = useRef(null);
+  
+  // Cleanup function
+  const cleanup = useCallback(() => {
+    if (dataChannelRef.current) {
+      dataChannelRef.current.close();
+      dataChannelRef.current = null;
+    }
+    if (peerConnectionRef.current) {
+      peerConnectionRef.current.close();
+      peerConnectionRef.current = null;
+    }
+    if (mediaStreamRef.current) {
+      mediaStreamRef.current.getTracks().forEach(track => track.stop());
+      mediaStreamRef.current = null;
+    }
+    if (audioContextRef.current) {
+      audioContextRef.current.close();
+      audioContextRef.current = null;
+    }
+    setConnectionStatus('disconnected');
+    setIsListening(false);
+    setIsSpeaking(false);
+  }, []);
+  
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => cleanup();
+  }, [cleanup]);
+  
+  // Extract JSON from text
+  const extractJsonFromText = (text) => {
+    // Try to find JSON block in the text
+    const jsonMatch = text.match(/```json\s*([\s\S]*?)\s*```/);
+    if (jsonMatch) {
+      try {
+        return JSON.parse(jsonMatch[1]);
+      } catch (e) {
+        console.log('Failed to parse JSON from code block:', e);
+      }
+    }
+    
+    // Try to find raw JSON object
+    const jsonObjectMatch = text.match(/\{[\s\S]*"daneOsobyPoszkodowanej"[\s\S]*\}/);
+    if (jsonObjectMatch) {
+      try {
+        return JSON.parse(jsonObjectMatch[0]);
+      } catch (e) {
+        console.log('Failed to parse JSON object:', e);
+      }
+    }
+    
+    return null;
+  };
+  
+  // Start voice session
+  const startSession = async () => {
+    setError(null);
+    setConnectionStatus('connecting');
+    
+    try {
+      // 1. Get ephemeral token from backend
+      const sessionResponse = await fetch(`${API_URL}/voice/session`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ voice: 'alloy' })
+      });
+      
+      if (!sessionResponse.ok) {
+        const errorData = await sessionResponse.json();
+        throw new Error(errorData.detail || 'Nie udało się utworzyć sesji głosowej');
+      }
+      
+      const { client_secret } = await sessionResponse.json();
+      
+      // 2. Create RTCPeerConnection
+      const pc = new RTCPeerConnection();
+      peerConnectionRef.current = pc;
+      
+      // 3. Set up audio element for playback
+      const audioEl = document.createElement('audio');
+      audioEl.autoplay = true;
+      audioElementRef.current = audioEl;
+      
+      // Handle incoming audio track
+      pc.ontrack = (event) => {
+        audioEl.srcObject = event.streams[0];
+        setIsSpeaking(true);
+      };
+      
+      // 4. Get microphone access
+      const mediaStream = await navigator.mediaDevices.getUserMedia({ 
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true
+        }
+      });
+      mediaStreamRef.current = mediaStream;
+      
+      // Add audio track to peer connection
+      mediaStream.getTracks().forEach(track => {
+        pc.addTrack(track, mediaStream);
+      });
+      
+      // 5. Create data channel for events
+      const dc = pc.createDataChannel('oai-events');
+      dataChannelRef.current = dc;
+      
+      dc.onopen = () => {
+        console.log('Data channel opened');
+        setConnectionStatus('connected');
+        setIsListening(true);
+        
+        // Send initial session update to configure
+        dc.send(JSON.stringify({
+          type: 'session.update',
+          session: {
+            modalities: ['text', 'audio'],
+            input_audio_transcription: {
+              model: 'whisper-1'
+            }
+          }
+        }));
+      };
+      
+      dc.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          handleRealtimeEvent(data);
+        } catch (e) {
+          console.error('Failed to parse event:', e);
+        }
+      };
+      
+      dc.onclose = () => {
+        console.log('Data channel closed');
+        setConnectionStatus('disconnected');
+        setIsListening(false);
+      };
+      
+      dc.onerror = (error) => {
+        console.error('Data channel error:', error);
+        setError('Błąd połączenia z asystentem');
+        setConnectionStatus('error');
+      };
+      
+      // 6. Create and set local description (offer)
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+      
+      // 7. Send offer to OpenAI Realtime API
+      const sdpResponse = await fetch('https://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-12-17', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${client_secret}`,
+          'Content-Type': 'application/sdp'
+        },
+        body: offer.sdp
+      });
+      
+      if (!sdpResponse.ok) {
+        throw new Error('Nie udało się nawiązać połączenia z OpenAI');
+      }
+      
+      // 8. Set remote description (answer)
+      const answerSdp = await sdpResponse.text();
+      await pc.setRemoteDescription({
+        type: 'answer',
+        sdp: answerSdp
+      });
+      
+      console.log('WebRTC connection established');
+      
+    } catch (err) {
+      console.error('Session start error:', err);
+      setError(err.message || 'Nie udało się uruchomić sesji głosowej');
+      setConnectionStatus('error');
+      cleanup();
+    }
+  };
+  
+  // Handle events from Realtime API
+  const handleRealtimeEvent = (event) => {
+    console.log('Realtime event:', event.type);
+    
+    switch (event.type) {
+      case 'conversation.item.input_audio_transcription.completed':
+        // User's speech transcribed
+        if (event.transcript) {
+          setTranscript(prev => [...prev, { role: 'user', content: event.transcript }]);
+        }
+        break;
+        
+      case 'response.audio_transcript.delta':
+        // Assistant speaking - update transcript
+        setIsSpeaking(true);
+        break;
+        
+      case 'response.audio_transcript.done':
+        // Assistant finished this transcript segment
+        if (event.transcript) {
+          setTranscript(prev => {
+            // Check if last message is from assistant, append or create new
+            const last = prev[prev.length - 1];
+            if (last && last.role === 'assistant' && last.partial) {
+              return [...prev.slice(0, -1), { role: 'assistant', content: event.transcript }];
+            }
+            return [...prev, { role: 'assistant', content: event.transcript }];
+          });
+          
+          // Try to extract form data from assistant response
+          const extracted = extractJsonFromText(event.transcript);
+          if (extracted) {
+            setFormData(extracted);
+          }
+        }
+        break;
+        
+      case 'response.done':
+        // Response complete
+        setIsSpeaking(false);
+        break;
+        
+      case 'response.text.done':
+        // Text response (might contain JSON)
+        if (event.text) {
+          const extracted = extractJsonFromText(event.text);
+          if (extracted) {
+            setFormData(extracted);
+          }
+        }
+        break;
+        
+      case 'input_audio_buffer.speech_started':
+        setIsListening(true);
+        break;
+        
+      case 'input_audio_buffer.speech_stopped':
+        setIsListening(false);
+        break;
+        
+      case 'error':
+        console.error('Realtime API error:', event.error);
+        setError(event.error?.message || 'Wystąpił błąd podczas rozmowy');
+        break;
+        
+      default:
+        // Ignore other events
+        break;
+    }
+  };
+  
+  // Stop session
+  const stopSession = () => {
+    cleanup();
+    setTranscript([]);
+  };
+  
+  // Submit form data
+  const handleSubmit = async () => {
+    if (!formData) {
+      setError('Brak danych formularza do wysłania');
+      return;
+    }
+    
+    setIsSubmitting(true);
+    setError(null);
+    
+    try {
+      const response = await fetch(`${API_URL}/voice/submit`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ form_data: formData })
+      });
+      
+      const data = await response.json();
+      
+      if (data.success && data.data?.valid) {
+        // Success - navigate to PDF view
+        cleanup();
+        navigate('/success-pdf', {
+          state: {
+            pdfFilename: data.data.pdf_filename,
+            peselFolderPath: data.data.pesel_folder_path,
+            validationComment: data.data.comment
+          }
+        });
+      } else {
+        // Validation errors
+        setError(data.message || 'Formularz zawiera błędy');
+      }
+    } catch (err) {
+      console.error('Submit error:', err);
+      setError('Błąd podczas wysyłania formularza');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+  
+  // Reset conversation
+  const handleReset = () => {
+    setTranscript([]);
+    setFormData(null);
+    setError(null);
+  };
+  
   return (
-    <div className="page-container">
+    <div className="page-container voice-container">
       <h1 className="page-title">{t('voice.title')}</h1>
-
-      <div className="placeholder-card">
-        <div className="placeholder-icon">🎤</div>
-        <p className="placeholder-text">{t('voice.description')}</p>
+      <p className="page-description">{t('voice.subtitle')}</p>
+      
+      {/* Instructions */}
+      <div className="voice-instructions">
+        <div className="voice-instructions-title">
+          💡 {t('voice.instructions_title')}
+        </div>
+        <ul className="voice-instructions-list">
+          <li>{t('voice.instruction_1')}</li>
+          <li>{t('voice.instruction_2')}</li>
+          <li>{t('voice.instruction_3')}</li>
+          <li>{t('voice.instruction_4')}</li>
+        </ul>
+      </div>
+      
+      {/* Error message */}
+      {error && (
+        <div className="status-message status-error">
+          {error}
+        </div>
+      )}
+      
+      <div className="voice-main">
+        {/* Left panel - Voice Control & Transcript */}
+        <div className="voice-panel">
+          <div className="voice-panel-title">
+            🎤 {t('voice.conversation')}
+            <div className="connection-status" style={{ marginLeft: 'auto' }}>
+              <span className={`connection-dot ${connectionStatus}`}></span>
+              <span>
+                {connectionStatus === 'connected' && t('voice.status_connected')}
+                {connectionStatus === 'connecting' && t('voice.status_connecting')}
+                {connectionStatus === 'disconnected' && t('voice.status_disconnected')}
+                {connectionStatus === 'error' && t('voice.status_error')}
+              </span>
+            </div>
+          </div>
+          
+          {/* Microphone button */}
+          <div className="voice-control">
+            <button
+              className={`mic-button ${isListening ? 'listening' : ''} ${isSpeaking ? 'speaking' : ''}`}
+              onClick={connectionStatus === 'connected' ? stopSession : startSession}
+              disabled={connectionStatus === 'connecting' || isSubmitting}
+            >
+              {connectionStatus === 'connected' ? '🛑' : '🎤'}
+            </button>
+            <div className={`voice-status ${isListening ? 'active' : ''} ${isSpeaking ? 'speaking' : ''} ${connectionStatus === 'error' ? 'error' : ''}`}>
+              {connectionStatus === 'disconnected' && t('voice.click_to_start')}
+              {connectionStatus === 'connecting' && t('voice.connecting')}
+              {connectionStatus === 'connected' && !isListening && !isSpeaking && t('voice.listening')}
+              {isListening && t('voice.you_speaking')}
+              {isSpeaking && t('voice.assistant_speaking')}
+              {connectionStatus === 'error' && t('voice.connection_error')}
+            </div>
+          </div>
+          
+          {/* Transcript */}
+          <div className="transcript-container">
+            {transcript.length === 0 ? (
+              <div className="transcript-empty">
+                <div className="transcript-empty-icon">💬</div>
+                <p>{t('voice.transcript_empty')}</p>
+              </div>
+            ) : (
+              <div className="transcript-messages">
+                {transcript.map((msg, idx) => (
+                  <div key={idx} className={`transcript-message ${msg.role}`}>
+                    <div className="transcript-message-role">
+                      {msg.role === 'user' ? t('voice.you') : t('voice.assistant')}
+                    </div>
+                    {msg.content}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+        
+        {/* Right panel - Form Data Preview */}
+        <div className="voice-panel">
+          <div className="voice-panel-title">
+            📋 {t('voice.collected_data')}
+          </div>
+          
+          <div className="form-data-container">
+            {formData ? (
+              <pre className="form-data-preview">
+                {JSON.stringify(formData, null, 2)}
+              </pre>
+            ) : (
+              <div className="form-data-empty">
+                <div className="transcript-empty-icon">📝</div>
+                <p>{t('voice.form_data_empty')}</p>
+              </div>
+            )}
+          </div>
+          
+          {/* Actions */}
+          <div className="voice-actions">
+            <button
+              className="voice-action-btn secondary"
+              onClick={handleReset}
+              disabled={isSubmitting || connectionStatus === 'connecting'}
+            >
+              🔄 {t('voice.reset')}
+            </button>
+            <button
+              className="voice-action-btn primary"
+              onClick={handleSubmit}
+              disabled={!formData || isSubmitting || connectionStatus !== 'disconnected'}
+            >
+              {isSubmitting ? '⏳' : '✓'} {t('voice.submit')}
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );

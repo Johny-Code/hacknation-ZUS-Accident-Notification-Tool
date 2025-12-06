@@ -119,6 +119,30 @@
   },
   "voice": {
     "title": "Voice Assistant",
-    "description": "Coming soon - report accident by talking to AI"
+    "subtitle": "Report an accident by talking to AI",
+    "description": "Coming soon - report accident by talking to AI",
+    "instructions_title": "How does it work?",
+    "instruction_1": "Click the microphone button to start the conversation",
+    "instruction_2": "The assistant will guide you through all form questions",
+    "instruction_3": "Speak clearly - the system recognizes speech in real-time",
+    "instruction_4": "After collecting data, review and submit the form",
+    "conversation": "Conversation",
+    "collected_data": "Collected Data",
+    "status_connected": "Connected",
+    "status_connecting": "Connecting...",
+    "status_disconnected": "Disconnected",
+    "status_error": "Error",
+    "click_to_start": "Click to start",
+    "connecting": "Connecting to assistant...",
+    "listening": "Listening...",
+    "you_speaking": "You're speaking...",
+    "assistant_speaking": "Assistant speaking...",
+    "connection_error": "Connection error",
+    "transcript_empty": "Start the conversation by clicking the microphone button",
+    "form_data_empty": "Form data will appear here after the conversation",
+    "you": "You",
+    "assistant": "Assistant",
+    "reset": "Start over",
+    "submit": "Submit form"
   }
 }

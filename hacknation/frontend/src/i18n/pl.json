@@ -135,6 +135,30 @@
   },
   "voice": {
     "title": "Asystent głosowy",
-    "description": "Wkrótce dostępny - zgłoś wypadek rozmową z AI"
+    "subtitle": "Zgłoś wypadek przez rozmowę z AI",
+    "description": "Wkrótce dostępny - zgłoś wypadek rozmową z AI",
+    "instructions_title": "Jak to działa?",
+    "instruction_1": "Kliknij przycisk mikrofonu aby rozpocząć rozmowę",
+    "instruction_2": "Asystent przeprowadzi Cię przez wszystkie pytania formularza",
+    "instruction_3": "Mów wyraźnie - system rozpoznaje mowę w czasie rzeczywistym",
+    "instruction_4": "Po zebraniu danych sprawdź i zatwierdź formularz",
+    "conversation": "Rozmowa",
+    "collected_data": "Zebrane dane",
+    "status_connected": "Połączono",
+    "status_connecting": "Łączenie...",
+    "status_disconnected": "Rozłączono",
+    "status_error": "Błąd",
+    "click_to_start": "Kliknij aby rozpocząć",
+    "connecting": "Łączenie z asystentem...",
+    "listening": "Słucham...",
+    "you_speaking": "Mówisz...",
+    "assistant_speaking": "Asystent mówi...",
+    "connection_error": "Błąd połączenia",
+    "transcript_empty": "Rozpocznij rozmowę klikając przycisk mikrofonu",
+    "form_data_empty": "Dane formularza pojawią się tutaj po rozmowie",
+    "you": "Ty",
+    "assistant": "Asystent",
+    "reset": "Zacznij od nowa",
+    "submit": "Wyślij formularz"
   }
 }

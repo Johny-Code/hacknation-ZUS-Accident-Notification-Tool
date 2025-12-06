@@ -171,7 +171,7 @@
           "miejscowosc": { "type": "string" },
           "nazwaPanstwa": { "type": "string" }
         },
-        "required": ["sposobKorespondencji"],
+        "required": [],
         "additionalProperties": false
       },
   

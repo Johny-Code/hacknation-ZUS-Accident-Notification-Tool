@@ -1,0 +1,89 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "Wyjaśnienia poszkodowanego",
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "imieNazwisko": { "type": "string" },
+      "dataUrodzenia": { "type": "string", "format": "date" },
+      "miejsceUrodzenia": { "type": "string" },
+      "adresZamieszkania": { "type": "string" },
+      "zatrudnienie": { "type": "string" },
+      "dokumentTozsamosci": { "type": "string" },
+
+      "dataWypadku": { "type": "string", "format": "date" },
+      "miejsceWypadku": { "type": "string" },
+      "godzinaWypadku": { "type": "string" },
+
+      "planowanaGodzinaRozpoczeciaPracy": { "type": "string" },
+      "planowanaGodzinaZakonczeniaPracy": { "type": "string" },
+
+      "rodzajCzynnosciPrzedWypadkiem": { "type": "string" },
+      "opisOkolicznosciWypadku": { "type": "string" },
+
+      "czyWypadekPodczasObslugiMaszyn": { "type": "boolean" },
+      "nazwaTypUrzadzenia": { "type": "string" },
+      "dataProdukcjiUrzadzenia": { "type": "string" },
+      "czyUrzadzenieSprawneIUzytkowanePrawidlowo": { "type": "string" },
+
+      "czyBylyZabezpieczenia": { "type": "boolean" },
+      "rodzajZabezpieczen": { "type": "string" },
+      "czySrodkiWlasciweISprawne": { "type": "boolean" },
+
+      "czyAsekuracja": { "type": "boolean" },
+      "czyObowiazekPracyPrzezDwieOsoby": { "type": "boolean" },
+
+      "czyPrzestrzeganoZasadBHP": { "type": "boolean" },
+      "czyPosiadamPrzygotowanieZawodowe": { "type": "boolean" },
+
+      "czyOdbylemSzkolenieBHP": { "type": "boolean" },
+      "czyPosiadamOceneRyzykaZawodowego": { "type": "boolean" },
+      "stosowaneSrodkiZmniejszajaceRyzyko": { "type": "string" },
+
+      "czyWStanieNietrzezwosci": { "type": "boolean" },
+      "stanTrzezwosciBadany": {
+        "type": "string",
+        "enum": ["badany_przez_policje", "badany_podczas_pierwszej_pomocy", "nie_badany"]
+      },
+
+      "czyOrganyPodejmowalyCzynnosci": { "type": "boolean" },
+      "organyISzczegoly": { "type": "string" },
+
+      "pierwszaPomocData": { "type": "string" },
+      "nazwaPlacowkiZdrowia": { "type": "string" },
+      "okresIMiejsceHospitalizacji": { "type": "string" },
+      "rozpoznanyUraz": { "type": "string" },
+      "niezdolnoscDoPracy": { "type": "string" },
+
+      "czyNaZwolnieniuWLacuWypadku": { "type": "boolean" },
+
+      "dataPodpisania": { "type": "string", "format": "date" },
+      "podpisPoszkodowanego": { "type": "string" },
+      "podpisPrzyjmujacego": { "type": "string" }
+    },
+    "required": [
+      "imieNazwisko",
+      "dataUrodzenia",
+      "miejsceUrodzenia",
+      "adresZamieszkania",
+      "zatrudnienie",
+      "dokumentTozsamosci",
+      "dataWypadku",
+      "miejsceWypadku",
+      "godzinaWypadku",
+      "planowanaGodzinaRozpoczeciaPracy",
+      "planowanaGodzinaZakonczeniaPracy",
+      "rodzajCzynnosciPrzedWypadkiem",
+      "opisOkolicznosciWypadku",
+      "czyWypadekPodczasObslugiMaszyn",
+      "czyBylyZabezpieczenia",
+      "czyAsekuracja",
+      "czyPrzestrzeganoZasadBHP",
+      "czyPosiadamPrzygotowanieZawodowe",
+      "czyOdbylemSzkolenieBHP",
+      "czyPosiadamOceneRyzykaZawodowego",
+      "czyWStanieNietrzezwosci",
+      "stanTrzezwosciBadany"
+    ]
+  }
+
