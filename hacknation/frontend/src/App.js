@@ -420,6 +420,8 @@ function FormPage({ t }) {
   const [status, setStatus] = useState(null);
   const [loading, setLoading] = useState(false);
   const [validationErrors, setValidationErrors] = useState(null);
+  const [fieldErrors, setFieldErrors] = useState({});
+  const [activeWitnesses, setActiveWitnesses] = useState([true, false, false]);
 
   const updateField = (path, value) => {
     setFormData((prev) => {
