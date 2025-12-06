@@ -149,7 +149,9 @@ function SkanPage({ t }) {
       {ocrResult && (
         <div className="ocr-result">
           <h3 className="ocr-result-title">{t('skan.ocr_result')}</h3>
-          <div className="ocr-result-content">{ocrResult}</div>
+          <pre className="json-preview" style={{ textAlign: 'left', overflow: 'auto', maxHeight: '500px' }}>
+            {typeof ocrResult === 'string' ? ocrResult : JSON.stringify(ocrResult, null, 2)}
+          </pre>
         </div>
       )}
     </div>
