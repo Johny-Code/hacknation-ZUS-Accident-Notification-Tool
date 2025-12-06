@@ -79,7 +79,13 @@
       "data_do": "Data dostarczenia dokumentów (do)",
       "lista_dokumentow": "Lista dokumentów",
       "data_zlozenia": "Data złożenia oświadczenia",
-      "podpis": "Podpis"
+      "podpis": "Podpis",
+      "sposobKorespondencji": "Sposób korespondencji",
+      "numerDomu": "Numer domu",
+      "numerLokalu": "Numer lokalu",
+      "kodPocztowy": "Kod pocztowy",
+      "numerTelefonu": "Numer telefonu",
+      "nazwaPanstwa": "Nazwa państwa"
     },
     "hints": {
       "nazwa_panstwa": "Podaj, jeśli adres jest inny niż polski",
@@ -102,7 +108,17 @@
         "poste_restante": "poste restante",
         "skrytka_pocztowa": "skrytka pocztowa",
         "przegrodka_pocztowa": "przegródka pocztowa"
+      },
+      "sposob_odbioru": {
+        "placeholder": "Wybierz sposób odbioru odpowiedzi...",
+        "w_placowce_ZUS": "W placówce ZUS",
+        "poczta_na_adres_wskazany_we_wniosku": "Poczta – na adres wskazany we wniosku",
+        "na_koncie_PUE_ZUS": "Na koncie PUE ZUS"
       }
+    },
+    "validation": {
+      "sposob_korespondencji": "Wybierz sposób korespondencji z listy.",
+      "sposob_odbioru": "Wybierz sposób odbioru odpowiedzi z listy."
     },
     "submit": "Wyślij zgłoszenie",
     "success": "Formularz wysłany pomyślnie",

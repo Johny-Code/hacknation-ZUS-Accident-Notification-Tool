@@ -1,0 +1,291 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$id": "https://example.com/schemas/zus-ewyp.json",
+    "title": "ZUS EWYP – Zawiadomienie o wypadku",
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "daneOsobyPoszkodowanej": {
+        "type": "object",
+        "properties": {
+          "pesel": { "type": "string" },
+          "dokumentTozsamosci": {
+            "type": "object",
+            "properties": {
+              "rodzaj": { "type": "string" },
+              "seriaINumer": { "type": "string" }
+            },
+            "required": ["rodzaj", "seriaINumer"],
+            "additionalProperties": false
+          },
+          "imie": { "type": "string" },
+          "nazwisko": { "type": "string" },
+          "dataUrodzenia": {
+            "type": "string",
+            "format": "date"
+          },
+          "miejsceUrodzenia": { "type": "string" },
+          "numerTelefonu": { "type": "string" }
+        },
+        "required": ["pesel", "imie", "nazwisko", "dataUrodzenia", "miejsceUrodzenia"],
+        "additionalProperties": false
+      },
+  
+      "adresZamieszkaniaOsobyPoszkodowanej": {
+        "type": "object",
+        "properties": {
+          "ulica": { "type": "string" },
+          "numerDomu": { "type": "string" },
+          "numerLokalu": { "type": "string" },
+          "kodPocztowy": { "type": "string" },
+          "miejscowosc": { "type": "string" },
+          "nazwaPanstwa": { "type": "string" }
+        },
+        "required": ["ulica", "numerDomu", "kodPocztowy", "miejscowosc"],
+        "additionalProperties": false
+      },
+  
+      "adresOstatniegoMiejscaZamieszkaniaWPolsceLubPobytuPoszkodowanego": {
+        "type": "object",
+        "properties": {
+          "ulica": { "type": "string" },
+          "numerDomu": { "type": "string" },
+          "numerLokalu": { "type": "string" },
+          "kodPocztowy": { "type": "string" },
+          "miejscowosc": { "type": "string" }
+        },
+        "required": [],
+        "additionalProperties": false
+      },
+  
+      "adresDoKorespondencjiOsobyPoszkodowanej": {
+        "type": "object",
+        "properties": {
+          "sposobKorespondencji": {
+            "type": "string",
+            "enum": ["adres", "poste_restante", "skrytka_pocztowa", "przegrodka_pocztowa"]
+          },
+          "ulica": { "type": "string" },
+          "numerDomu": { "type": "string" },
+          "numerLokalu": { "type": "string" },
+          "kodPocztowy": { "type": "string" },
+          "miejscowosc": { "type": "string" },
+          "nazwaPanstwa": { "type": "string" }
+        },
+        "required": ["sposobKorespondencji"],
+        "additionalProperties": false
+      },
+  
+      "adresMiejscaProwadzeniaPozarolniczejDzialalnosci": {
+        "type": "object",
+        "properties": {
+          "ulica": { "type": "string" },
+          "numerDomu": { "type": "string" },
+          "numerLokalu": { "type": "string" },
+          "kodPocztowy": { "type": "string" },
+          "miejscowosc": { "type": "string" },
+          "numerTelefonu": { "type": "string" }
+        },
+        "required": [],
+        "additionalProperties": false
+      },
+  
+      "adresSprawowaniaOpiekiNadDzieckiemDoLat3": {
+        "type": "object",
+        "properties": {
+          "ulica": { "type": "string" },
+          "numerDomu": { "type": "string" },
+          "numerLokalu": { "type": "string" },
+          "kodPocztowy": { "type": "string" },
+          "miejscowosc": { "type": "string" },
+          "numerTelefonu": { "type": "string" }
+        },
+        "required": [],
+        "additionalProperties": false
+      },
+  
+      "daneOsobyKtoraZawiadamia": {
+        "type": "object",
+        "properties": {
+          "jestPoszkodowanym": { "type": "boolean" },
+          "pesel": { "type": "string" },
+          "dokumentTozsamosci": {
+            "type": "object",
+            "properties": {
+              "rodzaj": { "type": "string" },
+              "seriaINumer": { "type": "string" }
+            },
+            "required": [],
+            "additionalProperties": false
+          },
+          "imie": { "type": "string" },
+          "nazwisko": { "type": "string" },
+          "dataUrodzenia": {
+            "type": "string",
+            "format": "date"
+          },
+          "numerTelefonu": { "type": "string" }
+        },
+        "required": [],
+        "additionalProperties": false
+      },
+  
+      "adresZamieszkaniaOsobyKtoraZawiadamia": {
+        "type": "object",
+        "properties": {
+          "ulica": { "type": "string" },
+          "numerDomu": { "type": "string" },
+          "numerLokalu": { "type": "string" },
+          "kodPocztowy": { "type": "string" },
+          "miejscowosc": { "type": "string" },
+          "nazwaPanstwa": { "type": "string" }
+        },
+        "required": [],
+        "additionalProperties": false
+      },
+  
+      "adresOstatniegoMiejscaZamieszkaniaWPolsceLubPobytuOsobyKtoraZawiadamia": {
+        "type": "object",
+        "properties": {
+          "ulica": { "type": "string" },
+          "numerDomu": { "type": "string" },
+          "numerLokalu": { "type": "string" },
+          "kodPocztowy": { "type": "string" },
+          "miejscowosc": { "type": "string" }
+        },
+        "required": [],
+        "additionalProperties": false
+      },
+  
+      "adresDoKorespondencjiOsobyKtoraZawiadamia": {
+        "type": "object",
+        "properties": {
+          "sposobKorespondencji": {
+            "type": "string",
+            "enum": ["adres", "poste_restante", "skrytka_pocztowa", "przegrodka_pocztowa"]
+          },
+          "ulica": { "type": "string" },
+          "numerDomu": { "type": "string" },
+          "numerLokalu": { "type": "string" },
+          "kodPocztowy": { "type": "string" },
+          "miejscowosc": { "type": "string" },
+          "nazwaPanstwa": { "type": "string" }
+        },
+        "required": ["sposobKorespondencji"],
+        "additionalProperties": false
+      },
+  
+      "informacjaOWypadku": {
+        "type": "object",
+        "properties": {
+          "dataWypadku": {
+            "type": "string",
+            "format": "date"
+          },
+          "godzinaWypadku": { "type": "string" },
+          "miejsceWypadku": { "type": "string" },
+          "planowanaGodzinaRozpoczeciaPracy": { "type": "string" },
+          "planowanaGodzinaZakonczeniaPracy": { "type": "string" },
+          "rodzajDoznanychUrazow": { "type": "string" },
+          "opisOkolicznosciMiejscaIPrzyczyn": { "type": "string" },
+          "pierwszaPomocUdzielona": { "type": "boolean" },
+          "placowkaUdzielajacaPierwszejPomocy": { "type": "string" },
+          "organProwadzacyPostepowanie": { "type": "string" },
+          "wypadekPodczasObslugiMaszynLubUrzadzen": { "type": "boolean" },
+          "opisStanuMaszynyIUzytkowania": { "type": "string" },
+          "maszynaPosiadaAtestLubDeklaracjeZgodnosci": { "type": "boolean" },
+          "maszynaWpisanaDoEwidencjiSrodkowTrwalych": { "type": "boolean" }
+        },
+        "required": ["dataWypadku", "miejsceWypadku"],
+        "additionalProperties": false
+      },
+  
+      "daneSwiadkowWypadku": {
+        "type": "array",
+        "maxItems": 3,
+        "items": {
+          "type": "object",
+          "properties": {
+            "imie": { "type": "string" },
+            "nazwisko": { "type": "string" },
+            "adres": {
+              "type": "object",
+              "properties": {
+                "ulica": { "type": "string" },
+                "numerDomu": { "type": "string" },
+                "numerLokalu": { "type": "string" },
+                "kodPocztowy": { "type": "string" },
+                "miejscowosc": { "type": "string" },
+                "nazwaPanstwa": { "type": "string" }
+              },
+              "required": [],
+              "additionalProperties": false
+            }
+          },
+          "required": ["imie", "nazwisko"],
+          "additionalProperties": false
+        }
+      },
+  
+      "zalaczniki": {
+        "type": "object",
+        "properties": {
+          "kartaInformacyjnaLubZaswiadczeniePierwszejPomocy": { "type": "boolean" },
+          "postanowienieProkuratury": { "type": "boolean" },
+          "dokumentyDotyczaceZgonu": { "type": "boolean" },
+          "dokumentyPotwierdzajacePrawoDoKartyWypadkuDlaInnejOsoby": { "type": "boolean" },
+          "inneDokumentyOpis": { "type": "string" }
+        },
+        "required": [],
+        "additionalProperties": false
+      },
+  
+      "dokumentyDoDostarczeniaPozniej": {
+        "type": "object",
+        "properties": {
+          "dataDo": {
+            "type": "string",
+            "format": "date"
+          },
+          "listaDokumentow": {
+            "type": "array",
+            "maxItems": 8,
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [],
+        "additionalProperties": false
+      },
+  
+      "sposobOdbioruOdpowiedzi": {
+        "type": "string",
+        "enum": [
+          "w_placowce_ZUS",
+          "poczta_na_adres_wskazany_we_wniosku",
+          "na_koncie_PUE_ZUS"
+        ]
+      },
+  
+      "oswiadczenie": {
+        "type": "object",
+        "properties": {
+          "dataZlozenia": {
+            "type": "string",
+            "format": "date"
+          },
+          "podpis": { "type": "string" }
+        },
+        "required": [],
+        "additionalProperties": false
+      }
+    },
+    "required": [
+      "daneOsobyPoszkodowanej",
+      "adresZamieszkaniaOsobyPoszkodowanej",
+      "informacjaOWypadku",
+      "sposobOdbioruOdpowiedzi"
+    ]
+  }
+  

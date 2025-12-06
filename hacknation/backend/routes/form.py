@@ -7,6 +7,7 @@ from fastapi import APIRouter, HTTPException
 from fastapi.responses import FileResponse
 
 from models import FormResponse, ZawiadomienieOWypadku
+from services.validation import validate_data, validate_latest_filled_form
 from services.check_if_report_valid import check_if_report_valid
 from services.pdf_filler import generate_filled_pdf
 
@@ -27,14 +28,26 @@ async def submit_zawiadomienie(form_data: ZawiadomienieOWypadku):
     Validates the form data with LLM, saves it as JSON, generates a filled PDF,
     and returns success response with the PDF filename.
     """
-    # Generate timestamp filename
+    form_dict = form_data.model_dump()
+    validation = validate_data(form_dict)
+
+    # Jeśli walidacja się nie powiedzie – NIE zapisujemy pliku
+    if not validation["success"]:
+        return FormResponse(
+            success=False,
+            message="Formularz zawiera błędy walidacji. Popraw zaznaczone pola.",
+            data={
+                "form": form_dict,
+                "errors": validation["errors"],
+            },
+        )
+
+    # Walidacja OK – dopiero teraz zapisujemy plik
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
     json_filename = f"{timestamp}.json"
     json_filepath = FILLED_FORMS_DIR / json_filename
 
-    # Save form data to JSON file
-    form_dict = form_data.model_dump()
-    with open(json_filepath, "w", encoding="utf-8") as f:
+    with open(filepath, "w", encoding="utf-8") as f:
         json.dump(form_dict, f, ensure_ascii=False, indent=2)
 
     # Validate with LLM
@@ -113,6 +126,36 @@ async def submit_zawiadomienie(form_data: ZawiadomienieOWypadku):
 
     return FormResponse(
         success=True,
+        message=f"Zawiadomienie o wypadku saved as {filename}. Dane są poprawne.",
+        data={
+            "form": form_dict,
+            "filename": filename,
+            "errors": [],
+        },
+    )
+
+
+@router.get("/form/validate-latest", response_model=FormResponse)
+async def validate_latest_form():
+    """
+    Waliduje najnowszy zapisany plik z katalogu `filled_forms`
+    względem `schema.json` (po znormalizowaniu pól typu value/annotation/parsed).
+
+    Przeznaczone do wywołania z frontendu po kliknięciu „Wyślij”.
+    """
+    result = validate_latest_filled_form()
+
+    if result["success"]:
+        return FormResponse(
+            success=True,
+            message=f"Plik {result['filename']} jest poprawny.",
+            data={"filename": result["filename"], "errors": []},
+        )
+
+    return FormResponse(
+        success=False,
+        message=f"Plik {result['filename']} zawiera błędy walidacji.",
+        data={"filename": result["filename"], "errors": result["errors"]},
         message="Formularz został zweryfikowany pomyślnie i PDF został wygenerowany.",
         data={
             "valid": True,

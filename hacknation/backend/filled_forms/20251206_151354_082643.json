@@ -12,12 +12,25 @@
     "numerTelefonu": "500123456"
   },
   "adresZamieszkaniaOsobyPoszkodowanej": {
-    "ulica": "ul. Marszałkowska",
-    "numerDomu": "10",
-    "numerLokalu": "5",
-    "kodPocztowy": "00-001",
-    "miejscowosc": "Warszawa",
-    "nazwaPanstwa": "Polska"
+    "ulica": {
+      "value": "ul. Marszałkowska",
+      "annotation": "",
+      "parsed": true
+    },
+    "numerDomu": {
+      "value": "10",
+      "annotation": "",
+      "parsed": true
+    },
+    "numerLokalu": {
+      "value": "5",
+      "annotation": "",
+      "parsed": true
+    },
+    "kodPocztowy": {
+      "value": "00-001",
+      "annotation": "",
+      "parsed": true
   },
   "adresOstatniegoMiejscaZamieszkaniaWPolsceLubPobytuPoszkodowanego": {
     "ulica": "",

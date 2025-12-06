@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Routes, Route, Link, useLocation } from 'react-router-dom';
+import { Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom';
 
 // Import translations
 import plTranslations from './i18n/pl.json';
@@ -159,9 +159,22 @@ function SkanPage({ t }) {
 }
 
 // Helper Component: AddressForm
-const AddressForm = ({ data, path, updateField, t, title, description, includeCountry = false, includePhone = false, includeCorrespondenceMethod = false, fieldDescriptions = {} }) => {
+const AddressForm = ({
+  data,
+  path,
+  updateField,
+  t,
+  title,
+  description,
+  includeCountry = false,
+  includePhone = false,
+  includeCorrespondenceMethod = false,
+  fieldDescriptions = {},
+  fieldErrors = {},
+}) => {
   if (!data) return null;
-  
+
+  const baseKey = Array.isArray(path) ? path.join('.') : String(path ?? '');
   return (
     <div className="address-block" style={{ marginBottom: '20px' }}>
       {title && <h3 className="section-subtitle">{title}</h3>}
@@ -171,16 +184,23 @@ const AddressForm = ({ data, path, updateField, t, title, description, includeCo
         <div className="form-group">
           <label className="form-label">{t('form.fields.sposob_korespondencji')}</label>
           <select
-            className="form-input"
+            className={`form-input ${
+              fieldErrors[`${baseKey}.sposobKorespondencji`] ? 'form-input-error' : ''
+            }`}
             value={data.sposobKorespondencji || ''}
             onChange={(e) => updateField([...path, 'sposobKorespondencji'], e.target.value)}
           >
             <option value="">{t('form.options.sposob_korespondencji.placeholder')}</option>
             <option value="adres">{t('form.options.sposob_korespondencji.adres')}</option>
-            <option value="poste restante">{t('form.options.sposob_korespondencji.poste_restante')}</option>
-            <option value="skrytka pocztowa">{t('form.options.sposob_korespondencji.skrytka_pocztowa')}</option>
-            <option value="przegródka pocztowa">{t('form.options.sposob_korespondencji.przegrodka_pocztowa')}</option>
+            <option value="poste_restante">{t('form.options.sposob_korespondencji.poste_restante')}</option>
+            <option value="skrytka_pocztowa">{t('form.options.sposob_korespondencji.skrytka_pocztowa')}</option>
+            <option value="przegrodka_pocztowa">{t('form.options.sposob_korespondencji.przegrodka_pocztowa')}</option>
           </select>
+          {fieldErrors[`${baseKey}.sposobKorespondencji`] && (
+            <span className="field-error-text">
+              {t('form.validation.sposob_korespondencji')}
+            </span>
+          )}
           {fieldDescriptions.sposobKorespondencji && <p className="field-description">{fieldDescriptions.sposobKorespondencji}</p>}
         </div>
       )}
@@ -188,25 +208,46 @@ const AddressForm = ({ data, path, updateField, t, title, description, includeCo
       <div className="form-group">
         <label className="form-label">{t('form.fields.ulica')}</label>
         <input
-          type="text" className="form-input" value={data.ulica || ''}
+          type="text"
+          className={`form-input ${
+            fieldErrors[`${baseKey}.ulica`] ? 'form-input-error' : ''
+          }`}
+          value={data.ulica || ''}
           onChange={(e) => updateField([...path, 'ulica'], e.target.value)}
         />
+        {fieldErrors[`${baseKey}.ulica`] && (
+          <span className="field-error-text">{fieldErrors[`${baseKey}.ulica`]}</span>
+        )}
       </div>
 
       <div className="form-row">
         <div className="form-group">
           <label className="form-label">{t('form.fields.numer_domu')}</label>
           <input
-            type="text" className="form-input" value={data.numerDomu || ''}
+            type="text"
+            className={`form-input ${
+              fieldErrors[`${baseKey}.numerDomu`] ? 'form-input-error' : ''
+            }`}
+            value={data.numerDomu || ''}
             onChange={(e) => updateField([...path, 'numerDomu'], e.target.value)}
           />
+          {fieldErrors[`${baseKey}.numerDomu`] && (
+            <span className="field-error-text">{fieldErrors[`${baseKey}.numerDomu`]}</span>
+          )}
         </div>
         <div className="form-group">
           <label className="form-label">{t('form.fields.numer_lokalu')}</label>
           <input
-            type="text" className="form-input" value={data.numerLokalu || ''}
+            type="text"
+            className={`form-input ${
+              fieldErrors[`${baseKey}.numerLokalu`] ? 'form-input-error' : ''
+            }`}
+            value={data.numerLokalu || ''}
             onChange={(e) => updateField([...path, 'numerLokalu'], e.target.value)}
           />
+          {fieldErrors[`${baseKey}.numerLokalu`] && (
+            <span className="field-error-text">{fieldErrors[`${baseKey}.numerLokalu`]}</span>
+          )}
         </div>
       </div>
 
@@ -214,16 +255,30 @@ const AddressForm = ({ data, path, updateField, t, title, description, includeCo
         <div className="form-group">
           <label className="form-label">{t('form.fields.kod_pocztowy')}</label>
           <input
-            type="text" className="form-input" value={data.kodPocztowy || ''}
+            type="text"
+            className={`form-input ${
+              fieldErrors[`${baseKey}.kodPocztowy`] ? 'form-input-error' : ''
+            }`}
+            value={data.kodPocztowy || ''}
             onChange={(e) => updateField([...path, 'kodPocztowy'], e.target.value)}
           />
+          {fieldErrors[`${baseKey}.kodPocztowy`] && (
+            <span className="field-error-text">{fieldErrors[`${baseKey}.kodPocztowy`]}</span>
+          )}
         </div>
         <div className="form-group">
           <label className="form-label">{t('form.fields.miejscowosc')}</label>
           <input
-            type="text" className="form-input" value={data.miejscowosc || ''}
+            type="text"
+            className={`form-input ${
+              fieldErrors[`${baseKey}.miejscowosc`] ? 'form-input-error' : ''
+            }`}
+            value={data.miejscowosc || ''}
             onChange={(e) => updateField([...path, 'miejscowosc'], e.target.value)}
           />
+          {fieldErrors[`${baseKey}.miejscowosc`] && (
+            <span className="field-error-text">{fieldErrors[`${baseKey}.miejscowosc`]}</span>
+          )}
         </div>
       </div>
 
@@ -231,9 +286,16 @@ const AddressForm = ({ data, path, updateField, t, title, description, includeCo
         <div className="form-group">
           <label className="form-label">{t('form.fields.nazwa_panstwa')}</label>
           <input
-            type="text" className="form-input" value={data.nazwaPanstwa || ''}
+            type="text"
+            className={`form-input ${
+              fieldErrors[`${baseKey}.nazwaPanstwa`] ? 'form-input-error' : ''
+            }`}
+            value={data.nazwaPanstwa || ''}
             onChange={(e) => updateField([...path, 'nazwaPanstwa'], e.target.value)}
           />
+          {fieldErrors[`${baseKey}.nazwaPanstwa`] && (
+            <span className="field-error-text">{fieldErrors[`${baseKey}.nazwaPanstwa`]}</span>
+          )}
           {fieldDescriptions.nazwaPanstwa && <p className="field-description">{fieldDescriptions.nazwaPanstwa}</p>}
         </div>
       )}
@@ -242,9 +304,16 @@ const AddressForm = ({ data, path, updateField, t, title, description, includeCo
         <div className="form-group">
           <label className="form-label">{t('form.fields.numer_telefonu')}</label>
           <input
-            type="text" className="form-input" value={data.numerTelefonu || ''}
+            type="text"
+            className={`form-input ${
+              fieldErrors[`${baseKey}.numerTelefonu`] ? 'form-input-error' : ''
+            }`}
+            value={data.numerTelefonu || ''}
             onChange={(e) => updateField([...path, 'numerTelefonu'], e.target.value)}
           />
+          {fieldErrors[`${baseKey}.numerTelefonu`] && (
+            <span className="field-error-text">{fieldErrors[`${baseKey}.numerTelefonu`]}</span>
+          )}
         </div>
       )}
     </div>
@@ -264,6 +333,7 @@ const FieldWarning = ({ message }) => {
 
 // Form Page - Zawiadomienie o wypadku (ZUS EWYP schema)
 function FormPage({ t }) {
+  const navigate = useNavigate();
   const initialFormData = {
     daneOsobyPoszkodowanej: {
       pesel: '90010112345',
@@ -339,7 +409,7 @@ function FormPage({ t }) {
       dataDo: '',
       listaDokumentow: ['', '', '', '', '', '', '', ''],
     },
-    sposobOdbioruOdpowiedzi: 'poczta tradycyjna',
+    sposobOdbioruOdpowiedzi: '',
     oswiadczenie: {
       dataZlozenia: '2025-12-06',
       podpis: 'Jan Kowalski',
@@ -363,6 +433,55 @@ function FormPage({ t }) {
       current[path[path.length - 1]] = value;
       return updated;
     });
+
+    // Wyczyść błąd dla danego pola po zmianie jego wartości
+    const key = path.join('.');
+    setFieldErrors((prev) => {
+      if (!prev[key]) return prev;
+      const next = { ...prev };
+      delete next[key];
+      return next;
+    });
+  };
+
+  const buildPayload = (data) => {
+    // Głęboka kopia, żeby nie mutować stanu Reacta
+    const payload = JSON.parse(JSON.stringify(data));
+
+    // Jeśli osoba zawiadamiająca jest tą samą osobą co poszkodowana,
+    // usuń WSZYSTKIE pola tej osoby oprócz flagi jestPoszkodowanym
+    if (payload.daneOsobyKtoraZawiadamia?.jestPoszkodowanym) {
+      // Zostaw tylko flagę
+      delete payload.daneOsobyKtoraZawiadamia.pesel;
+      delete payload.daneOsobyKtoraZawiadamia.dokumentTozsamosci;
+      delete payload.daneOsobyKtoraZawiadamia.imie;
+      delete payload.daneOsobyKtoraZawiadamia.nazwisko;
+      delete payload.daneOsobyKtoraZawiadamia.dataUrodzenia;
+      delete payload.daneOsobyKtoraZawiadamia.numerTelefonu;
+
+      delete payload.adresZamieszkaniaOsobyKtoraZawiadamia;
+      delete payload.adresOstatniegoMiejscaZamieszkaniaWPolsceLubPobytuOsobyKtoraZawiadamia;
+      delete payload.adresDoKorespondencjiOsobyKtoraZawiadamia;
+    }
+
+    // Usuń puste obiekty świadków (gdy imię i nazwisko są puste)
+    if (payload.daneSwiadkowWypadku && Array.isArray(payload.daneSwiadkowWypadku)) {
+      payload.daneSwiadkowWypadku = payload.daneSwiadkowWypadku.filter(
+        (swiadek) => swiadek.imie && swiadek.nazwisko
+      );
+    }
+
+    // Usuń dokumentTozsamosci jeśli jest pusty (gdy rodzaj i seriaINumer są puste)
+    if (
+      payload.daneOsobyPoszkodowanej?.dokumentTozsamosci &&
+      !payload.daneOsobyPoszkodowanej.dokumentTozsamosci.rodzaj &&
+      !payload.daneOsobyPoszkodowanej.dokumentTozsamosci.seriaINumer
+    ) {
+      delete payload.daneOsobyPoszkodowanej.dokumentTozsamosci;
+    }
+
+    console.log('📤 Payload to send:', payload);
+    return payload;
   };
 
   const handleSubmit = async (e) => {
@@ -372,10 +491,12 @@ function FormPage({ t }) {
     setValidationErrors(null);
 
     try {
+      const payload = buildPayload(formData);
+
       const response = await fetch(`${API_URL}/form`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(payload),
       });
       const data = await response.json();
 
@@ -406,6 +527,12 @@ function FormPage({ t }) {
     <div className="page-container">
       <h1 className="page-title">{t('form.title')}</h1>
 
+      {status && (
+        <div className={`status-message status-${status.type}`}>
+          {status.message}
+        </div>
+      )}
+
       <div className="form-card">
         {validationErrors && validationErrors.comment && (
           <div className="validation-banner">
@@ -423,38 +550,96 @@ function FormPage({ t }) {
 
           <div className="form-group">
             <label className="form-label">{t('form.fields.imie')}</label>
-            <input type="text" className="form-input" value={formData.daneOsobyPoszkodowanej.imie} onChange={(e) => updateField(['daneOsobyPoszkodowanej', 'imie'], e.target.value)} required />
+            <input
+              type="text"
+              className={`form-input ${fieldErrors['daneOsobyPoszkodowanej.imie'] ? 'form-input-error' : ''}`}
+              value={formData.daneOsobyPoszkodowanej.imie}
+              onChange={(e) => updateField(['daneOsobyPoszkodowanej', 'imie'], e.target.value)}
+              required
+            />
+            {fieldErrors['daneOsobyPoszkodowanej.imie'] && (
+              <span className="field-error-text">{fieldErrors['daneOsobyPoszkodowanej.imie']}</span>
+            )}
           </div>
 
           <div className="form-group">
             <label className="form-label">{t('form.fields.nazwisko')}</label>
-            <input type="text" className="form-input" value={formData.daneOsobyPoszkodowanej.nazwisko} onChange={(e) => updateField(['daneOsobyPoszkodowanej', 'nazwisko'], e.target.value)} required />
+            <input
+              type="text"
+              className={`form-input ${fieldErrors['daneOsobyPoszkodowanej.nazwisko'] ? 'form-input-error' : ''}`}
+              value={formData.daneOsobyPoszkodowanej.nazwisko}
+              onChange={(e) => updateField(['daneOsobyPoszkodowanej', 'nazwisko'], e.target.value)}
+              required
+            />
+            {fieldErrors['daneOsobyPoszkodowanej.nazwisko'] && (
+              <span className="field-error-text">{fieldErrors['daneOsobyPoszkodowanej.nazwisko']}</span>
+            )}
           </div>
 
           <div className="form-group">
             <label className="form-label">{t('form.fields.pesel')}</label>
-            <input type="text" className="form-input" value={formData.daneOsobyPoszkodowanej.pesel} onChange={(e) => updateField(['daneOsobyPoszkodowanej', 'pesel'], e.target.value)} />
+            <input
+              type="text"
+              className={`form-input ${fieldErrors['daneOsobyPoszkodowanej.pesel'] ? 'form-input-error' : ''}`}
+              value={formData.daneOsobyPoszkodowanej.pesel}
+              onChange={(e) => updateField(['daneOsobyPoszkodowanej', 'pesel'], e.target.value)}
+            />
+            {fieldErrors['daneOsobyPoszkodowanej.pesel'] && (
+              <span className="field-error-text">{fieldErrors['daneOsobyPoszkodowanej.pesel']}</span>
+            )}
           </div>
 
           <div className="form-row">
             <div className="form-group">
               <label className="form-label">{t('form.fields.dataUrodzenia')}</label>
-              <input type="date" className="form-input" value={formData.daneOsobyPoszkodowanej.dataUrodzenia} onChange={(e) => updateField(['daneOsobyPoszkodowanej', 'dataUrodzenia'], e.target.value)} />
+              <input
+                type="date"
+                className={`form-input ${fieldErrors['daneOsobyPoszkodowanej.dataUrodzenia'] ? 'form-input-error' : ''}`}
+                value={formData.daneOsobyPoszkodowanej.dataUrodzenia}
+                onChange={(e) => updateField(['daneOsobyPoszkodowanej', 'dataUrodzenia'], e.target.value)}
+              />
+              {fieldErrors['daneOsobyPoszkodowanej.dataUrodzenia'] && (
+                <span className="field-error-text">{fieldErrors['daneOsobyPoszkodowanej.dataUrodzenia']}</span>
+              )}
             </div>
             <div className="form-group">
               <label className="form-label">{t('form.fields.miejsceUrodzenia')}</label>
-              <input type="text" className="form-input" value={formData.daneOsobyPoszkodowanej.miejsceUrodzenia} onChange={(e) => updateField(['daneOsobyPoszkodowanej', 'miejsceUrodzenia'], e.target.value)} />
+              <input
+                type="text"
+                className={`form-input ${fieldErrors['daneOsobyPoszkodowanej.miejsceUrodzenia'] ? 'form-input-error' : ''}`}
+                value={formData.daneOsobyPoszkodowanej.miejsceUrodzenia}
+                onChange={(e) => updateField(['daneOsobyPoszkodowanej', 'miejsceUrodzenia'], e.target.value)}
+              />
+              {fieldErrors['daneOsobyPoszkodowanej.miejsceUrodzenia'] && (
+                <span className="field-error-text">{fieldErrors['daneOsobyPoszkodowanej.miejsceUrodzenia']}</span>
+              )}
             </div>
           </div>
 
           <div className="form-row">
             <div className="form-group">
               <label className="form-label">{t('form.fields.dokumentRodzaj')}</label>
-              <input type="text" className="form-input" value={formData.daneOsobyPoszkodowanej.dokumentTozsamosci.rodzaj} onChange={(e) => updateField(['daneOsobyPoszkodowanej', 'dokumentTozsamosci', 'rodzaj'], e.target.value)} />
+              <input
+                type="text"
+                className={`form-input ${fieldErrors['daneOsobyPoszkodowanej.dokumentTozsamosci.rodzaj'] ? 'form-input-error' : ''}`}
+                value={formData.daneOsobyPoszkodowanej.dokumentTozsamosci.rodzaj}
+                onChange={(e) => updateField(['daneOsobyPoszkodowanej', 'dokumentTozsamosci', 'rodzaj'], e.target.value)}
+              />
+              {fieldErrors['daneOsobyPoszkodowanej.dokumentTozsamosci.rodzaj'] && (
+                <span className="field-error-text">{fieldErrors['daneOsobyPoszkodowanej.dokumentTozsamosci.rodzaj']}</span>
+              )}
             </div>
             <div className="form-group">
               <label className="form-label">{t('form.fields.dokumentSeriaNumer')}</label>
-              <input type="text" className="form-input" value={formData.daneOsobyPoszkodowanej.dokumentTozsamosci.seriaINumer} onChange={(e) => updateField(['daneOsobyPoszkodowanej', 'dokumentTozsamosci', 'seriaINumer'], e.target.value)} />
+              <input
+                type="text"
+                className={`form-input ${fieldErrors['daneOsobyPoszkodowanej.dokumentTozsamosci.seriaINumer'] ? 'form-input-error' : ''}`}
+                value={formData.daneOsobyPoszkodowanej.dokumentTozsamosci.seriaINumer}
+                onChange={(e) => updateField(['daneOsobyPoszkodowanej', 'dokumentTozsamosci', 'seriaINumer'], e.target.value)}
+              />
+              {fieldErrors['daneOsobyPoszkodowanej.dokumentTozsamosci.seriaINumer'] && (
+                <span className="field-error-text">{fieldErrors['daneOsobyPoszkodowanej.dokumentTozsamosci.seriaINumer']}</span>
+              )}
             </div>
           </div>
 
@@ -473,6 +658,7 @@ function FormPage({ t }) {
             title={t('form.sections.adresZamieszkaniaOsobyPoszkodowanej')} 
             includeCountry={true}
             fieldDescriptions={{ nazwaPanstwa: t('form.hints.nazwa_panstwa') }}
+            fieldErrors={fieldErrors}
           />
           
           <AddressForm 
@@ -482,6 +668,7 @@ function FormPage({ t }) {
             t={t} 
             title={t('form.sections.adresOstatniegoMiejsca')} 
             description={t('form.hints.adres_ostatniego_miejsca')}
+            fieldErrors={fieldErrors}
           />
           
           <AddressForm 
@@ -494,6 +681,7 @@ function FormPage({ t }) {
             includeCountry={true} 
             includeCorrespondenceMethod={true}
             fieldDescriptions={{ nazwaPanstwa: t('form.hints.nazwa_panstwa_twoj') }}
+            fieldErrors={fieldErrors}
           />
           
           <AddressForm 
@@ -503,7 +691,8 @@ function FormPage({ t }) {
             t={t} 
             title={t('form.sections.adresDzialalnosci')}
             description={t('form.hints.adres_dzialalnosci')}
-            includePhone={true} 
+            includePhone={true}
+            fieldErrors={fieldErrors}
           />
           
           <AddressForm 
@@ -513,7 +702,8 @@ function FormPage({ t }) {
             t={t} 
             title={t('form.sections.adresOpieki')} 
             description={t('form.hints.adres_opieki')}
-            includePhone={true} 
+            includePhone={true}
+            fieldErrors={fieldErrors}
           />
 
 
@@ -572,6 +762,7 @@ function FormPage({ t }) {
                 description={t('form.hints.adres_zamieszkania_zawiadamiajacej')}
                 includeCountry={true} 
                 fieldDescriptions={{ nazwaPanstwa: t('form.hints.nazwa_panstwa_twoj') }}
+                fieldErrors={fieldErrors}
               />
 
               <AddressForm 
@@ -581,6 +772,7 @@ function FormPage({ t }) {
                 t={t} 
                 title={t('form.sections.adresOstatniegoMiejsca')}
                 description={t('form.hints.adres_ostatniego_miejsca_zawiadamiajacej')} 
+                fieldErrors={fieldErrors}
               />
 
               <AddressForm 
@@ -593,6 +785,7 @@ function FormPage({ t }) {
                 includeCountry={true} 
                 includeCorrespondenceMethod={true} 
                 fieldDescriptions={{ nazwaPanstwa: t('form.hints.nazwa_panstwa_twoj') }}
+                fieldErrors={fieldErrors}
               />
             </>
           )}
@@ -697,22 +890,73 @@ function FormPage({ t }) {
 
           {/* 4. Świadkowie wypadku */}
           <h2 className="section-title">{t('form.sections.daneSwiadkow')}</h2>
-          {formData.daneSwiadkowWypadku.map((swiadek, index) => (
-            <div key={index} className="witness-block" style={{ border: '1px solid #eee', padding: '10px', marginBottom: '15px' }}>
-              <h3 className="section-subtitle">{t('form.fields.swiadek')} {index + 1}</h3>
-              <div className="form-row">
-                <div className="form-group">
-                  <label className="form-label">{t('form.fields.imie')}</label>
-                  <input type="text" className="form-input" value={swiadek.imie} onChange={(e) => updateField(['daneSwiadkowWypadku', index, 'imie'], e.target.value)} />
+          {formData.daneSwiadkowWypadku.map((swiadek, index) => {
+            const witnessKey = `daneSwiadkowWypadku.${index}`;
+            return (
+              <div key={index} className="witness-block" style={{ border: '1px solid #eee', padding: '10px', marginBottom: '15px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                  <h3 className="section-subtitle" style={{ margin: 0 }}>{t('form.fields.swiadek')} {index + 1}</h3>
+                  <label className="form-label" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <input
+                      type="checkbox"
+                      checked={activeWitnesses[index]}
+                      onChange={(e) => {
+                        const newActive = [...activeWitnesses];
+                        newActive[index] = e.target.checked;
+                        setActiveWitnesses(newActive);
+                        
+                        // Jeśli wyłączamy świadka, wyczyść jego dane
+                        if (!e.target.checked) {
+                          updateField(['daneSwiadkowWypadku', index, 'imie'], '');
+                          updateField(['daneSwiadkowWypadku', index, 'nazwisko'], '');
+                          updateField(['daneSwiadkowWypadku', index, 'adres'], {
+                            ulica: '', numerDomu: '', numerLokalu: '', kodPocztowy: '', miejscowosc: '', nazwaPanstwa: ''
+                          });
+                        }
+                      }}
+                    />
+                    Dodaj świadka
+                  </label>
                 </div>
-                <div className="form-group">
-                  <label className="form-label">{t('form.fields.nazwisko')}</label>
-                  <input type="text" className="form-input" value={swiadek.nazwisko} onChange={(e) => updateField(['daneSwiadkowWypadku', index, 'nazwisko'], e.target.value)} />
-                </div>
+                
+                {activeWitnesses[index] && (
+                  <>
+                    <div className="form-row">
+                      <div className="form-group">
+                        <label className="form-label">{t('form.fields.imie')}</label>
+                        <input
+                          type="text"
+                          className={`form-input ${
+                            fieldErrors[`${witnessKey}.imie`] ? 'form-input-error' : ''
+                          }`}
+                          value={swiadek.imie}
+                          onChange={(e) => updateField(['daneSwiadkowWypadku', index, 'imie'], e.target.value)}
+                        />
+                        {fieldErrors[`${witnessKey}.imie`] && (
+                          <span className="field-error-text">{fieldErrors[`${witnessKey}.imie`]}</span>
+                        )}
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label">{t('form.fields.nazwisko')}</label>
+                        <input
+                          type="text"
+                          className={`form-input ${
+                            fieldErrors[`${witnessKey}.nazwisko`] ? 'form-input-error' : ''
+                          }`}
+                          value={swiadek.nazwisko}
+                          onChange={(e) => updateField(['daneSwiadkowWypadku', index, 'nazwisko'], e.target.value)}
+                        />
+                        {fieldErrors[`${witnessKey}.nazwisko`] && (
+                          <span className="field-error-text">{fieldErrors[`${witnessKey}.nazwisko`]}</span>
+                        )}
+                      </div>
+                    </div>
+                    <AddressForm data={swiadek.adres} path={['daneSwiadkowWypadku', index, 'adres']} updateField={updateField} t={t} includeCountry={true} fieldErrors={fieldErrors} />
+                  </>
+                )}
               </div>
-              <AddressForm data={swiadek.adres} path={['daneSwiadkowWypadku', index, 'adres']} updateField={updateField} t={t} includeCountry={true} />
-            </div>
-          ))}
+            );
+          })}
 
           {/* 5. Załączniki */}
           <h2 className="section-title">{t('form.sections.zalaczniki')}</h2>
@@ -772,22 +1016,38 @@ function FormPage({ t }) {
           </div>
 
            {/* 8. Sposób odbioru */}
-           <div className="form-group">
-              <label className="form-label">{t('form.sections.sposobOdbioru')}</label>
-              <input type="text" className="form-input" value={formData.sposobOdbioruOdpowiedzi} onChange={(e) => updateField(['sposobOdbioruOdpowiedzi'], e.target.value)} />
-           </div>
+          <div className="form-group">
+            <label className="form-label">{t('form.sections.sposobOdbioru')}</label>
+            <select
+              className={`form-input ${
+                fieldErrors['sposobOdbioruOdpowiedzi'] ? 'form-input-error' : ''
+              }`}
+              value={formData.sposobOdbioruOdpowiedzi || ''}
+              onChange={(e) => updateField(['sposobOdbioruOdpowiedzi'], e.target.value)}
+            >
+              <option value="">{t('form.options.sposob_odbioru.placeholder')}</option>
+              <option value="w_placowce_ZUS">
+                {t('form.options.sposob_odbioru.w_placowce_ZUS')}
+              </option>
+              <option value="poczta_na_adres_wskazany_we_wniosku">
+                {t('form.options.sposob_odbioru.poczta_na_adres_wskazany_we_wniosku')}
+              </option>
+              <option value="na_koncie_PUE_ZUS">
+                {t('form.options.sposob_odbioru.na_koncie_PUE_ZUS')}
+              </option>
+            </select>
+            {fieldErrors['sposobOdbioruOdpowiedzi'] && (
+              <span className="field-error-text">
+                {t('form.validation.sposob_odbioru')}
+              </span>
+            )}
+          </div>
 
 
           <button type="submit" className="submit-button" disabled={loading}>
             {t('form.submit')}
           </button>
         </form>
-
-        {status && (
-          <div className={`status-message status-${status.type}`}>
-            {status.message}
-          </div>
-        )}
 
         <div className="json-preview-card">
           <h3 className="section-subtitle">{t('form.preview_title')}</h3>
@@ -814,6 +1074,94 @@ function VoicePage({ t }) {
   );
 }
 
+// Success Page
+function SuccessPage({ t }) {
+  const location = useLocation();
+  const filename = location.state?.filename || 'formularz.json';
+
+  return (
+    <div className="page-container">
+      <div className="success-container" style={{
+        maxWidth: '600px',
+        margin: '0 auto',
+        textAlign: 'center',
+        padding: '40px 20px'
+      }}>
+        <div style={{
+          fontSize: '80px',
+          marginBottom: '20px'
+        }}>✅</div>
+        
+        <h1 className="page-title" style={{ color: '#22c55e', marginBottom: '20px' }}>
+          Formularz wysłany pomyślnie!
+        </h1>
+        
+        <div style={{
+          background: '#f0fdf4',
+          border: '2px solid #22c55e',
+          borderRadius: '12px',
+          padding: '24px',
+          marginBottom: '30px'
+        }}>
+          <p style={{ 
+            fontSize: '16px', 
+            marginBottom: '12px',
+            color: '#166534',
+            fontWeight: '500'
+          }}>
+            Zawiadomienie o wypadku zostało zapisane
+          </p>
+          <p style={{
+            fontSize: '14px',
+            color: '#15803d',
+            wordBreak: 'break-all',
+            fontFamily: 'monospace',
+            background: '#dcfce7',
+            padding: '12px',
+            borderRadius: '8px'
+          }}>
+            📄 {filename}
+          </p>
+        </div>
+
+        <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
+          <Link 
+            to="/form" 
+            className="nav-button" 
+            style={{
+              display: 'inline-block',
+              padding: '12px 24px',
+              background: '#3b82f6',
+              color: 'white',
+              borderRadius: '8px',
+              textDecoration: 'none',
+              fontWeight: '500'
+            }}
+          >
+            📝 Wypełnij kolejny formularz
+          </Link>
+          
+          <Link 
+            to="/" 
+            className="nav-button"
+            style={{
+              display: 'inline-block',
+              padding: '12px 24px',
+              background: '#6b7280',
+              color: 'white',
+              borderRadius: '8px',
+              textDecoration: 'none',
+              fontWeight: '500'
+            }}
+          >
+            🏠 Wróć do strony głównej
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // Main App
 function App() {
   const [lang] = useState('pl'); // Default to Polish
@@ -834,6 +1182,7 @@ function App() {
         <Route path="/skan" element={<SkanPage t={t} />} />
         <Route path="/form" element={<FormPage t={t} />} />
         <Route path="/voice" element={<VoicePage t={t} />} />
+        <Route path="/success" element={<SuccessPage t={t} />} />
       </Routes>
     </div>
   );
