@@ -2,6 +2,11 @@
 #input data
 data/
 
+# Generated PDFs (keep .gitkeep files)
+hacknation/backend/filled_forms/*.pdf
+hacknation/backend/filled_forms/*.json
+hacknation/backend/pdfs/**/*.pdf
+!hacknation/backend/pdfs/.gitkeep
 
 #python 
 # Byte-compiled / optimized / DLL files
