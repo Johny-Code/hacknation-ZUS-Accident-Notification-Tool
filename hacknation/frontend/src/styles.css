@@ -334,6 +334,69 @@ body {
   color: var(--error);
 }
 
+/* Validation Banner */
+.validation-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1.25rem 1.5rem;
+  background: rgba(251, 191, 36, 0.1);
+  border: 1px solid #fbbf24;
+  border-radius: 12px;
+  margin-bottom: 2rem;
+}
+
+.validation-banner-icon {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.validation-banner-content {
+  flex: 1;
+}
+
+.validation-banner-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #fbbf24;
+  margin-bottom: 0.5rem;
+}
+
+.validation-banner-message {
+  color: var(--text-primary);
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+/* Field Warning */
+.field-warning {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: rgba(251, 191, 36, 0.08);
+  border: 1px solid rgba(251, 191, 36, 0.3);
+  border-radius: 6px;
+}
+
+.field-warning-icon {
+  font-size: 0.9rem;
+  flex-shrink: 0;
+}
+
+.field-warning-text {
+  color: #fbbf24;
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
+/* Input with warning */
+.input-warning {
+  border-color: #fbbf24 !important;
+  box-shadow: 0 0 0 1px rgba(251, 191, 36, 0.2);
+}
+
 /* OCR Result */
 .ocr-result {
   margin-top: 2rem;

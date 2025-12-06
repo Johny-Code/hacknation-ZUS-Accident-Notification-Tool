@@ -249,6 +249,17 @@ const AddressForm = ({ data, path, updateField, t, title, description, includeCo
   );
 };
 
+// Helper Component: Field Warning
+const FieldWarning = ({ message }) => {
+  if (!message) return null;
+  return (
+    <div className="field-warning">
+      <span className="field-warning-icon">⚠️</span>
+      <span className="field-warning-text">{message}</span>
+    </div>
+  );
+};
+
 // Form Page - Zawiadomienie o wypadku (ZUS EWYP schema)
 function FormPage({ t }) {
   const initialFormData = {
@@ -336,6 +347,7 @@ function FormPage({ t }) {
   const [formData, setFormData] = useState(initialFormData);
   const [status, setStatus] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [validationErrors, setValidationErrors] = useState(null);
 
   const updateField = (path, value) => {
     setFormData((prev) => {
@@ -355,6 +367,7 @@ function FormPage({ t }) {
     e.preventDefault();
     setLoading(true);
     setStatus(null);
+    setValidationErrors(null);
 
     try {
       const response = await fetch(`${API_URL}/form`, {
@@ -364,11 +377,21 @@ function FormPage({ t }) {
       });
       const data = await response.json();
 
-      if (data.success) {
-        setStatus({ type: 'success', message: t('form.success') });
-        setFormData(initialFormData);
+      if (data.success && data.data?.valid) {
+        setStatus({ type: 'success', message: data.message || t('form.success') });
+        setValidationErrors(null);
+        // Form is valid - could reset or proceed to next step
+      } else if (data.data && !data.data.valid) {
+        // Form validation failed - show errors
+        setValidationErrors({
+          comment: data.data.comment,
+          fieldErrors: data.data.fieldErrors || {},
+        });
+        setStatus({ type: 'error', message: data.data.comment || t('form.error') });
+        // Scroll to top to show the validation comment
+        window.scrollTo({ top: 0, behavior: 'smooth' });
       } else {
-        setStatus({ type: 'error', message: t('form.error') });
+        setStatus({ type: 'error', message: data.message || t('form.error') });
       }
     } catch (error) {
       setStatus({ type: 'error', message: t('form.error') });
@@ -382,6 +405,16 @@ function FormPage({ t }) {
       <h1 className="page-title">{t('form.title')}</h1>
 
       <div className="form-card">
+        {validationErrors && validationErrors.comment && (
+          <div className="validation-banner">
+            <div className="validation-banner-icon">⚠️</div>
+            <div className="validation-banner-content">
+              <h3 className="validation-banner-title">{t('form.validation_error_title') || 'Formularz wymaga uzupełnienia'}</h3>
+              <p className="validation-banner-message">{validationErrors.comment}</p>
+            </div>
+          </div>
+        )}
+        
         <form onSubmit={handleSubmit}>
           {/* 1. Dane osoby poszkodowanej */}
           <h2 className="section-title">{t('form.sections.daneOsobyPoszkodowanej')}</h2>
@@ -569,38 +602,45 @@ function FormPage({ t }) {
           <div className="form-row">
             <div className="form-group">
               <label className="form-label">{t('form.fields.data_wypadku')}</label>
-              <input type="date" className="form-input" value={formData.informacjaOWypadku.dataWypadku} onChange={(e) => updateField(['informacjaOWypadku', 'dataWypadku'], e.target.value)} required />
+              <input type="date" className={`form-input ${validationErrors?.fieldErrors?.dataWypadku ? 'input-warning' : ''}`} value={formData.informacjaOWypadku.dataWypadku} onChange={(e) => updateField(['informacjaOWypadku', 'dataWypadku'], e.target.value)} required />
+              <FieldWarning message={validationErrors?.fieldErrors?.dataWypadku} />
             </div>
             <div className="form-group">
               <label className="form-label">{t('form.fields.godzina_wypadku')}</label>
-              <input type="time" className="form-input" value={formData.informacjaOWypadku.godzinaWypadku} onChange={(e) => updateField(['informacjaOWypadku', 'godzinaWypadku'], e.target.value)} />
+              <input type="time" className={`form-input ${validationErrors?.fieldErrors?.godzinaWypadku ? 'input-warning' : ''}`} value={formData.informacjaOWypadku.godzinaWypadku} onChange={(e) => updateField(['informacjaOWypadku', 'godzinaWypadku'], e.target.value)} />
+              <FieldWarning message={validationErrors?.fieldErrors?.godzinaWypadku} />
             </div>
           </div>
           
            <div className="form-row">
             <div className="form-group">
               <label className="form-label">{t('form.fields.planowana_godzina_rozpoczecia')}</label>
-              <input type="time" className="form-input" value={formData.informacjaOWypadku.planowanaGodzinaRozpoczeciaPracy} onChange={(e) => updateField(['informacjaOWypadku', 'planowanaGodzinaRozpoczeciaPracy'], e.target.value)} />
+              <input type="time" className={`form-input ${validationErrors?.fieldErrors?.planowanaGodzinaRozpoczeciaPracy ? 'input-warning' : ''}`} value={formData.informacjaOWypadku.planowanaGodzinaRozpoczeciaPracy} onChange={(e) => updateField(['informacjaOWypadku', 'planowanaGodzinaRozpoczeciaPracy'], e.target.value)} />
+              <FieldWarning message={validationErrors?.fieldErrors?.planowanaGodzinaRozpoczeciaPracy} />
             </div>
             <div className="form-group">
               <label className="form-label">{t('form.fields.planowana_godzina_zakonczenia')}</label>
-              <input type="time" className="form-input" value={formData.informacjaOWypadku.planowanaGodzinaZakonczeniaPracy} onChange={(e) => updateField(['informacjaOWypadku', 'planowanaGodzinaZakonczeniaPracy'], e.target.value)} />
+              <input type="time" className={`form-input ${validationErrors?.fieldErrors?.planowanaGodzinaZakonczeniaPracy ? 'input-warning' : ''}`} value={formData.informacjaOWypadku.planowanaGodzinaZakonczeniaPracy} onChange={(e) => updateField(['informacjaOWypadku', 'planowanaGodzinaZakonczeniaPracy'], e.target.value)} />
+              <FieldWarning message={validationErrors?.fieldErrors?.planowanaGodzinaZakonczeniaPracy} />
             </div>
           </div>
 
           <div className="form-group">
             <label className="form-label">{t('form.fields.miejsce_wypadku')}</label>
-            <input type="text" className="form-input" value={formData.informacjaOWypadku.miejsceWypadku} onChange={(e) => updateField(['informacjaOWypadku', 'miejsceWypadku'], e.target.value)} required />
+            <input type="text" className={`form-input ${validationErrors?.fieldErrors?.miejsceWypadku ? 'input-warning' : ''}`} value={formData.informacjaOWypadku.miejsceWypadku} onChange={(e) => updateField(['informacjaOWypadku', 'miejsceWypadku'], e.target.value)} required />
+            <FieldWarning message={validationErrors?.fieldErrors?.miejsceWypadku} />
           </div>
 
           <div className="form-group">
             <label className="form-label">{t('form.fields.rodzaj_urazow')}</label>
-            <input type="text" className="form-input" value={formData.informacjaOWypadku.rodzajDoznanychUrazow} onChange={(e) => updateField(['informacjaOWypadku', 'rodzajDoznanychUrazow'], e.target.value)} />
+            <input type="text" className={`form-input ${validationErrors?.fieldErrors?.rodzajDoznanychUrazow ? 'input-warning' : ''}`} value={formData.informacjaOWypadku.rodzajDoznanychUrazow} onChange={(e) => updateField(['informacjaOWypadku', 'rodzajDoznanychUrazow'], e.target.value)} />
+            <FieldWarning message={validationErrors?.fieldErrors?.rodzajDoznanychUrazow} />
           </div>
 
           <div className="form-group">
             <label className="form-label">{t('form.fields.opis_okolicznosci')}</label>
-            <textarea className="form-textarea" value={formData.informacjaOWypadku.opisOkolicznosciMiejscaIPrzyczyn} onChange={(e) => updateField(['informacjaOWypadku', 'opisOkolicznosciMiejscaIPrzyczyn'], e.target.value)} required />
+            <textarea className={`form-textarea ${validationErrors?.fieldErrors?.opisOkolicznosciMiejscaIPrzyczyn ? 'input-warning' : ''}`} value={formData.informacjaOWypadku.opisOkolicznosciMiejscaIPrzyczyn} onChange={(e) => updateField(['informacjaOWypadku', 'opisOkolicznosciMiejscaIPrzyczyn'], e.target.value)} required />
+            <FieldWarning message={validationErrors?.fieldErrors?.opisOkolicznosciMiejscaIPrzyczyn} />
           </div>
 
           <div className="form-group">
@@ -613,13 +653,15 @@ function FormPage({ t }) {
           {formData.informacjaOWypadku.pierwszaPomocUdzielona && (
              <div className="form-group">
                 <label className="form-label">{t('form.fields.placowka_medyczna')}</label>
-                <input type="text" className="form-input" value={formData.informacjaOWypadku.placowkaUdzielajacaPierwszejPomocy} onChange={(e) => updateField(['informacjaOWypadku', 'placowkaUdzielajacaPierwszejPomocy'], e.target.value)} />
+                <input type="text" className={`form-input ${validationErrors?.fieldErrors?.placowkaUdzielajacaPierwszejPomocy ? 'input-warning' : ''}`} value={formData.informacjaOWypadku.placowkaUdzielajacaPierwszejPomocy} onChange={(e) => updateField(['informacjaOWypadku', 'placowkaUdzielajacaPierwszejPomocy'], e.target.value)} />
+                <FieldWarning message={validationErrors?.fieldErrors?.placowkaUdzielajacaPierwszejPomocy} />
             </div>
           )}
 
           <div className="form-group">
              <label className="form-label">{t('form.fields.organ_prowadzacy')}</label>
-             <input type="text" className="form-input" value={formData.informacjaOWypadku.organProwadzacyPostepowanie} onChange={(e) => updateField(['informacjaOWypadku', 'organProwadzacyPostepowanie'], e.target.value)} />
+             <input type="text" className={`form-input ${validationErrors?.fieldErrors?.organProwadzacyPostepowanie ? 'input-warning' : ''}`} value={formData.informacjaOWypadku.organProwadzacyPostepowanie} onChange={(e) => updateField(['informacjaOWypadku', 'organProwadzacyPostepowanie'], e.target.value)} />
+             <FieldWarning message={validationErrors?.fieldErrors?.organProwadzacyPostepowanie} />
           </div>
 
           <div className="form-group">
@@ -633,7 +675,8 @@ function FormPage({ t }) {
             <>
                <div className="form-group">
                   <label className="form-label">{t('form.fields.opis_stanu_maszyny')}</label>
-                  <textarea className="form-textarea" value={formData.informacjaOWypadku.opisStanuMaszynyIUzytkowania} onChange={(e) => updateField(['informacjaOWypadku', 'opisStanuMaszynyIUzytkowania'], e.target.value)} />
+                  <textarea className={`form-textarea ${validationErrors?.fieldErrors?.opisStanuMaszynyIUzytkowania ? 'input-warning' : ''}`} value={formData.informacjaOWypadku.opisStanuMaszynyIUzytkowania} onChange={(e) => updateField(['informacjaOWypadku', 'opisStanuMaszynyIUzytkowania'], e.target.value)} />
+                  <FieldWarning message={validationErrors?.fieldErrors?.opisStanuMaszynyIUzytkowania} />
                </div>
                <div className="form-group">
                  <label className="form-label">
