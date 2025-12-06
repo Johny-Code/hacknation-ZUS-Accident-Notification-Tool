@@ -555,6 +555,7 @@ body {
 
 .download-button:hover {
   background: #16a34a;
+}
 /* Success PDF Page */
 .success-pdf-page {
   max-width: 900px;
