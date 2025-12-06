@@ -536,16 +536,6 @@ function FormPage({ t }) {
       )}
 
       <div className="form-card">
-        {validationErrors && validationErrors.comment && (
-          <div className="validation-banner">
-            <div className="validation-banner-icon">⚠️</div>
-            <div className="validation-banner-content">
-              <h3 className="validation-banner-title">{t('form.validation_error_title') || 'Formularz wymaga uzupełnienia'}</h3>
-              <p className="validation-banner-message">{validationErrors.comment}</p>
-            </div>
-          </div>
-        )}
-        
         <form onSubmit={handleSubmit}>
           {/* 1. Dane osoby poszkodowanej */}
           <h2 className="section-title">{t('form.sections.daneOsobyPoszkodowanej')}</h2>

@@ -35,10 +35,7 @@ Sprawdź czy podane opisy są kompletne, spójne i czy zawierają wszystkie wyma
 - rodzajDoznanychUrazow
 - opisOkolicznosciMiejscaIPrzyczyn
 
-## Jeżeli uznasz, że niektóre pola są niekompletne, to wypełnij je odpowiednimi informacjami.
+W odpowiedzi zawrzyj te pola, które nie spełniają kryteriów kompletności. Napisz w nich dlaczego to pole nie spełnia kryteriów kompletności. Zawrzyj także krótki komentarz, który wytłumaczy zgłaszającemu, dlaczego formularz nie został zaakceptowany. Ten komentarz zostanie wyświetlony zgłaszającemu na górze formularza. Komentarze odnośnie konkretnych pól zostaną wyświetlone zgłaszającemu przy danym polu w formularzu.
 
-Napisz krótki komentarz dla zgłaszającego, które pola są niekomplene (zostanie on wyświetlony zgłaszającemu na górze formularza). W odpowiedzi zawrzyj te pola, które są niekompletne i krótką informację dlaczego są one niekompletne. (zostaną one wyświetlone w aplikacji przy danym polu w formularzu.)
-
-## Jeżeli są kompletne
-Podaj zawrzyj komentarz, dane kompletne i valid: true
+Jeżeli wszystkie pola spełniają kryteria kompletności, to zwróć valid: True, a w innym przypadku False
 """
