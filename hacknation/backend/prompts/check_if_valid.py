@@ -13,20 +13,6 @@ Na podstawie wejściowego JSON-a z informacjami pochodzącymi z:
 
 Twoim zadaniem jest sprawdzić, czy dokumenty są kompletne oraz czy opis wypadku zawiera wszystkie wymagane informacje i jest spójny. PROSZĘ nie podejmuj decyzji o uznaniu zdarzenia za wypadek przy pracy w sensie prawnym.
 
-# Dane wejściowe – struktura JSON
-
-JSON będzie zawierał pola opisujące wypadek:
-    dataWypadku
-    godzinaWypadku
-    miejsceWypadku
-    planowanaGodzinaRozpoczeciaPracy
-    planowanaGodzinaZakonczeniaPracy
-    rodzajDoznanychUrazow
-    opisOkolicznosciMiejscaIPrzyczyn
-    placowkaUdzielajacaPierwszejPomocy
-    organProwadzacyPostepowanie
-    opisStanuMaszynyIUzytkowania
-
 # Kluczowe definicje (do wstępnej oceny treści)
 
 Przy analizie opisu wypadku kieruj się definicją:
@@ -40,9 +26,16 @@ Wyjaśnienia:
 
 # Twoje zadanie
 
-Sprawdź czy podane opisy są kompletne, spójne i czy zawierają wszystkie wymagane informacje. 
+Sprawdź czy podane opisy są kompletne, spójne i czy zawierają wszystkie wymagane informacje. Wypełnij pola opcjonalne tylko jeżeli masz do nich uwagi. Niektóre pola mogą być puste, to znaczy, że nie mają związku z wypadkiem. Pola, które przez użytkownika nie mogą zostać puste to:     
+- dataWypadku
+- godzinaWypadku
+- miejsceWypadku    
+- planowanaGodzinaRozpoczeciaPracy
+- planowanaGodzinaZakonczeniaPracy
+- rodzajDoznanychUrazow
+- opisOkolicznosciMiejscaIPrzyczyn
 
-## Jeżeli nie
+## Jeżeli uznasz, że niektóre pola są niekompletne, to wypełnij je odpowiednimi informacjami.
 
 Napisz krótki komentarz dla zgłaszającego, które pola są niekomplene (zostanie on wyświetlony zgłaszającemu na górze formularza). W odpowiedzi zawrzyj te pola, które są niekompletne i krótką informację dlaczego są one niekompletne. (zostaną one wyświetlone w aplikacji przy danym polu w formularzu.)
 
