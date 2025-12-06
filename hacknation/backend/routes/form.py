@@ -63,7 +63,7 @@ async def submit_zawiadomienie(form_data: ZawiadomienieOWypadku):
     if validity_check.valid:
         return FormResponse(
             success=True,
-            message="Formularz został zweryfikowany pomyślnie.",
+            message=str(response_data),
             data=response_data
         )
     else:

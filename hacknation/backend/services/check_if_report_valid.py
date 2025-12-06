@@ -34,7 +34,7 @@ def check_if_report_valid(report_data: dict) -> bool:
 
     response = client.responses.parse(
         input=messages,
-        model="gpt-5-nano-2025-08-07",
+        model="gpt-5-mini",
         text_format=ValidityCheckModel
     )
 
