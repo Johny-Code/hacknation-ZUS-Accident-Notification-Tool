@@ -9,7 +9,7 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
 from models import FormResponse, ZawiadomienieOWypadku
-from services.validation import validate_data
+from services.validation import validate_data, validate_latest_filled_form
 from services.check_if_report_valid import check_if_report_valid
 from services.pdf_filler import generate_filled_pdf
 
@@ -170,6 +170,30 @@ async def submit_zawiadomienie(form_data: ZawiadomienieOWypadku):
             "pdf_filename": pdf_filename,
             "pesel_folder_path": pesel_folder_path
         }
+    )
+
+
+@router.get("/form/validate-latest", response_model=FormResponse)
+async def validate_latest_form():
+    """
+    Waliduje najnowszy zapisany plik z katalogu `filled_forms`
+    względem `schema.json` (po znormalizowaniu pól typu value/annotation/parsed).
+
+    Przeznaczone do wywołania z frontendu po kliknięciu „Wyślij".
+    """
+    result = validate_latest_filled_form()
+
+    if result["success"]:
+        return FormResponse(
+            success=True,
+            message=f"Plik {result['filename']} jest poprawny.",
+            data={"filename": result["filename"], "errors": []},
+        )
+
+    return FormResponse(
+        success=False,
+        message=f"Plik {result['filename']} zawiera błędy walidacji.",
+        data={"filename": result["filename"], "errors": result["errors"]},
     )
 
 

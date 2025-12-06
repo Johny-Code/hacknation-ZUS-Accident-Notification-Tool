@@ -6,7 +6,8 @@ from io import BytesIO
 from typing import Optional, Literal
 from pdf2image import convert_from_path
 from pydantic import BaseModel
-from prompts.ocr_prompt import OCR_SYSTEM_PROMPT
+from prompts.ocr_prompt import OCR_SYSTEM_PROMPT, OCR_WYJASNIENIA_PROMPT
+from services.document_detector import detect_document_type
 
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
@@ -140,6 +141,63 @@ class ZusEwypForm(BaseModel):
     oswiadczenie: Optional[Oswiadczenie] = None
 
 
+class WyjasnieniaPoszkodowanegoForm(BaseModel):
+    """Pydantic model for Wyjaśnienia poszkodowanego form (schema2)."""
+    imieNazwisko: Optional[str] = None
+    dataUrodzenia: Optional[str] = None
+    miejsceUrodzenia: Optional[str] = None
+    adresZamieszkania: Optional[str] = None
+    zatrudnienie: Optional[str] = None
+    dokumentTozsamosci: Optional[str] = None
+    
+    dataWypadku: Optional[str] = None
+    miejsceWypadku: Optional[str] = None
+    godzinaWypadku: Optional[str] = None
+    
+    planowanaGodzinaRozpoczeciaPracy: Optional[str] = None
+    planowanaGodzinaZakonczeniaPracy: Optional[str] = None
+    
+    rodzajCzynnosciPrzedWypadkiem: Optional[str] = None
+    opisOkolicznosciWypadku: Optional[str] = None
+    
+    czyWypadekPodczasObslugiMaszyn: Optional[bool] = None
+    nazwaTypUrzadzenia: Optional[str] = None
+    dataProdukcjiUrzadzenia: Optional[str] = None
+    czyUrzadzenieSprawneIUzytkowanePrawidlowo: Optional[str] = None
+    
+    czyBylyZabezpieczenia: Optional[bool] = None
+    rodzajZabezpieczen: Optional[str] = None
+    czySrodkiWlasciweISprawne: Optional[bool] = None
+    
+    czyAsekuracja: Optional[bool] = None
+    czyObowiazekPracyPrzezDwieOsoby: Optional[bool] = None
+    
+    czyPrzestrzeganoZasadBHP: Optional[bool] = None
+    czyPosiadamPrzygotowanieZawodowe: Optional[bool] = None
+    
+    czyOdbylemSzkolenieBHP: Optional[bool] = None
+    czyPosiadamOceneRyzykaZawodowego: Optional[bool] = None
+    stosowaneSrodkiZmniejszajaceRyzyko: Optional[str] = None
+    
+    czyWStanieNietrzezwosci: Optional[bool] = None
+    stanTrzezwosciBadany: Optional[Literal["badany_przez_policje", "badany_podczas_pierwszej_pomocy", "nie_badany"]] = None
+    
+    czyOrganyPodejmowalyCzynnosci: Optional[bool] = None
+    organyISzczegoly: Optional[str] = None
+    
+    pierwszaPomocData: Optional[str] = None
+    nazwaPlacowkiZdrowia: Optional[str] = None
+    okresIMiejsceHospitalizacji: Optional[str] = None
+    rozpoznanyUraz: Optional[str] = None
+    niezdolnoscDoPracy: Optional[str] = None
+    
+    czyNaZwolnieniuWLacuWypadku: Optional[bool] = None
+    
+    dataPodpisania: Optional[str] = None
+    podpisPoszkodowanego: Optional[str] = None
+    podpisPrzyjmujacego: Optional[str] = None
+
+
 def pdf_pages_to_base64_images(pdf_path: Path) -> list[str]:
     """
     Convert each page of a PDF to a base64-encoded JPEG image.
@@ -167,24 +225,38 @@ def pdf_pages_to_base64_images(pdf_path: Path) -> list[str]:
     return base64_images
 
 
-def process_pdf_ocr(pdf_path: Path) -> str:
+def process_pdf_ocr(pdf_path: Path) -> dict:
     """
     Process a PDF file and perform OCR to extract text using OpenAI Vision.
+    First detects document type, then extracts data using appropriate schema.
     
     Args:
         pdf_path: Path to the uploaded PDF file
         
     Returns:
-        Extracted text from the PDF
+        Dict with document_type and extracted data as JSON string
     """
-    # Convert PDF pages to base64 images
+    # Step 1: Detect document type
+    doc_type = detect_document_type(pdf_path)
+    
+    # Step 2: Convert PDF pages to base64 images
     base64_images = pdf_pages_to_base64_images(pdf_path)
+    
+    # Step 3: Choose prompt and schema based on document type
+    if doc_type == "WYJASNIENIA_POSZKODOWANEGO":
+        prompt = OCR_WYJASNIENIA_PROMPT
+        schema = WyjasnieniaPoszkodowanegoForm
+    else:
+        # Default to EWYP for both EWYP and UNKNOWN
+        prompt = OCR_SYSTEM_PROMPT
+        schema = ZusEwypForm
+        doc_type = "EWYP"  # Normalize unknown to EWYP
     
     # Build content list - start with prompt, then add images
     content = [
         {
             "type": "input_text",
-            "text": OCR_SYSTEM_PROMPT,
+            "text": prompt,
         }
     ]
     
@@ -199,8 +271,11 @@ def process_pdf_ocr(pdf_path: Path) -> str:
         input=[
             {"role": "user", "content": content}
         ],
-        text_format=ZusEwypForm,
+        text_format=schema,
     )
     
     result = response.output_parsed
-    return result.model_dump_json(indent=2, exclude_none=True)
+    return {
+        "document_type": doc_type,
+        "data": result.model_dump_json(indent=2, exclude_none=True)
+    }

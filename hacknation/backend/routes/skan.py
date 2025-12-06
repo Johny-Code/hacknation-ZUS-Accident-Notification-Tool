@@ -63,9 +63,10 @@ async def upload_scan(
     with open(file_path, "wb") as f:
         f.write(contents)
     
-    # Process the PDF with OCR
+    # Process the PDF with OCR (includes document type detection)
     logger.info(f"Processing PDF with OCR: {file.filename}")
-    ocr_result_json = process_pdf_ocr(file_path)
+    ocr_result = process_pdf_ocr(file_path)
+    ocr_result_json = ocr_result["data"]  # Extract JSON string from result
     
     # Parse OCR result to dict
     try:
@@ -254,7 +255,8 @@ async def upload_scan(
             "comment": validity_check.comment if validity_check else "Wszystkie walidacje przebiegły pomyślnie",
             "fieldErrors": field_errors,
             "json_filename": json_filename,
-            "pdf_filename": pdf_filename
+            "pdf_filename": pdf_filename,
+            "document_type": ocr_result["document_type"]
         }
     )
 
