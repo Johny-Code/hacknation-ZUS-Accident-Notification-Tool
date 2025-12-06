@@ -134,8 +134,16 @@ function SkanPage({ t }) {
 
   const handleGoToForm = () => {
     if (validationData && validationData.formData) {
-      // Navigate to form with pre-filled data
-      navigate('/form', { state: { prefilledData: validationData.formData } });
+      // Navigate directly to the appropriate form based on document type
+      const documentType = validationData.document_type;
+      
+      if (documentType === 'WYJASNIENIA_POSZKODOWANEGO') {
+        // Navigate to Wyjaśnienia poszkodowanego form
+        navigate('/form/wyjasnienia', { state: { prefilledData: validationData.formData } });
+      } else {
+        // Default to EWYP form for EWYP or unknown document types
+        navigate('/form/ewyp', { state: { prefilledData: validationData.formData } });
+      }
     }
   };
 

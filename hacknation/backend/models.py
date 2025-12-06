@@ -156,3 +156,76 @@ class ScanResponse(BaseModel):
     ocr_result: Optional[str] = None
     data: Optional[dict] = None
 
+
+# === Wyjaśnienia poszkodowanego – model formularza ===
+
+
+class WyjasnieniaPoszkodowanego(BaseModel):
+    """
+    Model formularza 'Wyjaśnienia poszkodowanego'.
+    Używany przy zgłaszaniu wyjaśnień dotyczących wypadku.
+    """
+    # Dane osobowe
+    imieNazwisko: str
+    dataUrodzenia: str  # format: YYYY-MM-DD
+    miejsceUrodzenia: str
+    adresZamieszkania: str
+    zatrudnienie: str
+    dokumentTozsamosci: str
+
+    # Informacje o wypadku
+    dataWypadku: str  # format: YYYY-MM-DD
+    miejsceWypadku: str
+    godzinaWypadku: str
+    planowanaGodzinaRozpoczeciaPracy: str
+    planowanaGodzinaZakonczeniaPracy: str
+
+    # Okoliczności wypadku
+    rodzajCzynnosciPrzedWypadkiem: str
+    opisOkolicznosciWypadku: str
+
+    # Maszyny i urządzenia
+    czyWypadekPodczasObslugiMaszyn: bool
+    nazwaTypUrzadzenia: Optional[str] = None
+    dataProdukcjiUrzadzenia: Optional[str] = None
+    czyUrzadzenieSprawneIUzytkowanePrawidlowo: Optional[str] = None
+
+    # Zabezpieczenia
+    czyBylyZabezpieczenia: bool
+    rodzajZabezpieczen: Optional[str] = None
+    czySrodkiWlasciweISprawne: Optional[bool] = None
+
+    # Warunki pracy
+    czyAsekuracja: bool
+    czyObowiazekPracyPrzezDwieOsoby: Optional[bool] = None
+
+    # BHP
+    czyPrzestrzeganoZasadBHP: bool
+    czyPosiadamPrzygotowanieZawodowe: bool
+    czyOdbylemSzkolenieBHP: bool
+    czyPosiadamOceneRyzykaZawodowego: bool
+    stosowaneSrodkiZmniejszajaceRyzyko: Optional[str] = None
+
+    # Stan trzeźwości
+    czyWStanieNietrzezwosci: bool
+    stanTrzezwosciBadany: str  # enum: badany_przez_policje, badany_podczas_pierwszej_pomocy, nie_badany
+
+    # Organy prowadzące czynności
+    czyOrganyPodejmowalyCzynnosci: Optional[bool] = None
+    organyISzczegoly: Optional[str] = None
+
+    # Pierwsza pomoc i hospitalizacja
+    pierwszaPomocData: Optional[str] = None
+    nazwaPlacowkiZdrowia: Optional[str] = None
+    okresIMiejsceHospitalizacji: Optional[str] = None
+    rozpoznanyUraz: Optional[str] = None
+    niezdolnoscDoPracy: Optional[str] = None
+
+    # Zwolnienie lekarskie
+    czyNaZwolnieniuWLacuWypadku: Optional[bool] = None
+
+    # Podpisy
+    dataPodpisania: Optional[str] = None  # format: YYYY-MM-DD
+    podpisPoszkodowanego: Optional[str] = None
+    podpisPrzyjmujacego: Optional[str] = None
+

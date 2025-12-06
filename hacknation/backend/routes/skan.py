@@ -10,7 +10,7 @@ from pathlib import Path
 from models import ScanResponse
 from config import get_user_upload_dir
 from services.ocr import process_pdf_ocr
-from services.validation import validate_data
+from services.validation import validate_data, validate_wyjasnienia, SchemaType
 from services.check_if_report_valid import check_if_report_valid
 from services.pdf_filler import generate_filled_pdf
 from routes.form import get_pesel_folder
@@ -115,6 +115,7 @@ async def upload_scan(
                     "json_filename": None,
                     "pdf_filename": None,
                     "formData": ocr_data,  # Pre-filled data for form
+                    "document_type": ocr_result["document_type"],
                     "userOptions": [
                         "reload_scan",  # Option 1: Upload scan again
                         "fill_form"     # Option 2: Go to form with pre-filled data
@@ -183,6 +184,7 @@ async def upload_scan(
                         "json_filename": json_filename,
                         "pdf_filename": None,
                         "formData": ocr_data,  # Pre-filled data for form
+                        "document_type": ocr_result["document_type"],
                         "userOptions": [
                             "reload_scan",  # Option 1: Upload scan again
                             "fill_form"     # Option 2: Go to form with pre-filled data
@@ -278,6 +280,98 @@ async def upload_scan(
             }
         )
     else:
-        #TODO Handle validation of Wyjaśnienia poszkodowanego
-        pass
+        # Handle "WYJASNIENIA_POSZKODOWANEGO" document type
+        try:
+            ocr_data = json.loads(ocr_result_json)
+        except json.JSONDecodeError as e:
+            logger.error(f"Failed to parse OCR result for Wyjaśnienia: {e}")
+            raise HTTPException(
+                status_code=500,
+                detail=f"Failed to parse OCR result: {str(e)}"
+            )
+        
+        # Step 1: Schema validation using validate_wyjasnienia
+        logger.info("Validating Wyjaśnienia OCR data against schema")
+        validation = validate_wyjasnienia(ocr_data)
+        
+        if not validation["success"]:
+            logger.warning(f"Schema validation failed with {len(validation['errors'])} errors")
+            
+            # Build user-friendly error messages for each field
+            field_error_messages = {}
+            for error in validation["errors"]:
+                field_path = ".".join(str(p) for p in error["path"])
+                field_error_messages[field_path] = error["message"]
+            
+            return ScanResponse(
+                success=False,
+                message="Wstępna walidacja nie przebiegła pomyślnie. Dane z dokumentu są niekompletne lub niepoprawne.",
+                ocr_result=ocr_result_json,
+                data={
+                    "filename": file.filename,
+                    "file_id": file_id,
+                    "user_id": user_id,
+                    "size_bytes": file_size,
+                    "stored_path": str(file_path),
+                    "validationStage": "schema",
+                    "valid": False,
+                    "errors": validation["errors"],
+                    "fieldErrors": field_error_messages,
+                    "json_filename": None,
+                    "pdf_filename": None,
+                    "formData": ocr_data,  # Pre-filled data for form
+                    "document_type": ocr_result["document_type"],
+                    "userOptions": [
+                        "reload_scan",  # Option 1: Upload scan again
+                        "fill_form"     # Option 2: Go to form with pre-filled data
+                    ]
+                }
+            )
+        
+        # Schema validation passed
+        logger.info("Schema validation passed for Wyjaśnienia - saving to JSON")
+        
+        # Step 2: Save to JSON file
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
+        json_filename = f"wyjasnienia_scan_{timestamp}.json"
+        json_filepath = FILLED_FORMS_DIR / json_filename
+        
+        with open(json_filepath, "w", encoding="utf-8") as f:
+            json.dump(ocr_data, f, ensure_ascii=False, indent=2)
+        
+        logger.info(f"Wyjaśnienia OCR data saved to {json_filename}")
+        
+        # Step 3: LLM Validation
+        # TODO: Implement LLM validation for 'Wyjaśnienia poszkodowanego' form
+        # Similar to check_if_report_valid() but adapted for this form type
+        # Example:
+        # validity_check = check_if_wyjasnienia_valid(ocr_data)
+        # if not validity_check.valid:
+        #     return ScanResponse with validation errors
+        
+        # Step 4: Generate TXT/PDF file
+        # TODO: Implement TXT/PDF generation for 'Wyjaśnienia poszkodowanego'
+        # This functionality is not yet implemented in form.py either
+        
+        # Step 5: Success - return with current data (no PDF/TXT generation yet)
+        return ScanResponse(
+            success=True,
+            message="Wstępna walidacja przebiegła pomyślnie, dane są poprawnie wypełnione. Dokument 'Wyjaśnienia poszkodowanego' został zapisany.",
+            ocr_result=ocr_result_json,
+            data={
+                "filename": file.filename,
+                "file_id": file_id,
+                "user_id": user_id,
+                "size_bytes": file_size,
+                "stored_path": str(file_path),
+                "validationStage": "completed",
+                "valid": True,
+                "comment": "Walidacja schematu przebiegła pomyślnie. Generowanie dokumentu wynikowego nie jest jeszcze zaimplementowane.",
+                "fieldErrors": {},
+                "json_filename": json_filename,
+                "pdf_filename": None,  # TODO: Add when PDF/TXT generation is implemented
+                "document_type": ocr_result["document_type"],
+                "formData": ocr_data
+            }
+        )
 

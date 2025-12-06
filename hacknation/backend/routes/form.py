@@ -8,8 +8,14 @@ from fastapi import APIRouter, HTTPException
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
-from models import FormResponse, ZawiadomienieOWypadku
-from services.validation import validate_data, validate_latest_filled_form
+from models import FormResponse, ZawiadomienieOWypadku, WyjasnieniaPoszkodowanego
+from services.validation import (
+    validate_data,
+    validate_latest_filled_form,
+    validate_zawiadomienie,
+    validate_wyjasnienia,
+    SchemaType,
+)
 from services.check_if_report_valid import check_if_report_valid
 from services.pdf_filler import generate_filled_pdf
 
@@ -197,6 +203,78 @@ async def validate_latest_form():
     )
 
 
+@router.post("/form/wyjasnienia", response_model=FormResponse)
+async def submit_wyjasnienia(form_data: WyjasnieniaPoszkodowanego):
+    """
+    Wyjaśnienia poszkodowanego - formularz zgłoszenia wyjaśnień dotyczących wypadku.
+
+    Flow:
+    1. Validates the form data against JSON schema (schema_wyjasnienia.json)
+    2. Saves the form as JSON
+    3. TODO: Validates with LLM (check_if_wyjasnienia_valid)
+    4. TODO: If validation passes, generates PDF file
+    5. TODO:Returns success response with the PDF filename
+    """
+    form_dict = form_data.model_dump()
+    
+    # Step 1: Schema validation
+    validation = validate_wyjasnienia(form_dict)
+
+    if not validation["success"]:
+        return FormResponse(
+            success=False,
+            message="Formularz zawiera błędy walidacji. Popraw zaznaczone pola.",
+            data={
+                "form": form_dict,
+                "errors": validation["errors"],
+            },
+        )
+
+    # Step 2: Save to JSON file
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
+    json_filename = f"wyjasnienia_{timestamp}.json"
+    json_filepath = FILLED_FORMS_DIR / json_filename
+
+    with open(json_filepath, "w", encoding="utf-8") as f:
+        json.dump(form_dict, f, ensure_ascii=False, indent=2)
+
+    logger.info(f"Wyjaśnienia form saved to {json_filename}")
+
+    # Step 3: TODO - LLM Validation
+    # TODO: Implement LLM validation for 'Wyjaśnienia poszkodowanego' form
+    # Similar to check_if_report_valid() but adapted for this form type
+    # Example:
+    # validity_check = check_if_wyjasnienia_valid(form_dict)
+    # if not validity_check.valid:
+    #     return FormResponse(
+    #         success=False,
+    #         message=validity_check.comment,
+    #         data={
+    #             "valid": False,
+    #             "comment": validity_check.comment,
+    #             "fieldErrors": field_errors,
+    #             "json_filename": json_filename,
+    #             "txt_filename": None
+    #         }
+    #     )
+    
+    # Step 4: Generate word / PDF file - musi być idealnie jak w ustawie
+    # TODO: Implement PDF filling for Wyjaśnienia poszkodowanego
+    
+    
+    # Step 5: Return success with PDF filename
+    # TODO: Implement return success with PDF filename
+    # return FormResponse(
+    #     success=True,
+    #     message="Formularz 'Wyjaśnienia poszkodowanego' został zweryfikowany pomyślnie. Plik PDF został wygenerowany.",
+    #     data={
+    #         "valid": True,
+    #         "json_filename": json_filename,
+    #         "pdf_filename": pdf_filename
+    #     }
+    # )
+
+
 @router.get("/form/download/{filename}")
 async def download_filled_pdf(filename: str):
     """
@@ -350,6 +428,125 @@ async def list_filled_forms():
         reverse=True  # Most recent first
     )
     return {"files": pdf_files, "count": len(pdf_files)}
+
+
+# === Endpoints for TXT files (Wyjaśnienia poszkodowanego) ===
+
+
+@router.get("/form/wyjasnienia/download/{filename}")
+async def download_wyjasnienia_txt(filename: str):
+    """
+    Download a generated TXT file for 'Wyjaśnienia poszkodowanego' (force download).
+    
+    Args:
+        filename: The TXT filename returned from the form submission
+        
+    Returns:
+        The TXT file for download
+    """
+    # Security: only allow TXT files from the filled_forms directory
+    if not filename.endswith(".txt"):
+        raise HTTPException(status_code=400, detail="Invalid file type - expected .txt")
+    
+    # Prevent path traversal
+    if ".." in filename or "/" in filename or "\\" in filename:
+        raise HTTPException(status_code=400, detail="Invalid filename")
+    
+    filepath = FILLED_FORMS_DIR / filename
+    
+    if not filepath.exists():
+        raise HTTPException(status_code=404, detail="TXT file not found")
+    
+    return FileResponse(
+        path=filepath,
+        filename=filename,
+        media_type="text/plain; charset=utf-8",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
+
+
+@router.get("/form/wyjasnienia/view/{filename}")
+async def view_wyjasnienia_txt(filename: str):
+    """
+    View a TXT file for 'Wyjaśnienia poszkodowanego' (inline display).
+    
+    Args:
+        filename: The TXT filename
+        
+    Returns:
+        The TXT file for inline viewing
+    """
+    # Security: only allow TXT files
+    if not filename.endswith(".txt"):
+        raise HTTPException(status_code=400, detail="Invalid file type - expected .txt")
+    
+    # Prevent path traversal
+    if ".." in filename or "/" in filename or "\\" in filename:
+        raise HTTPException(status_code=400, detail="Invalid filename")
+    
+    filepath = FILLED_FORMS_DIR / filename
+    
+    if not filepath.exists():
+        raise HTTPException(status_code=404, detail="TXT file not found")
+    
+    return FileResponse(
+        path=filepath,
+        media_type="text/plain; charset=utf-8",
+        headers={
+            "Content-Disposition": "inline",
+            "Cache-Control": "no-cache"
+        }
+    )
+
+
+@router.get("/form/wyjasnienia/content/{filename}")
+async def get_wyjasnienia_txt_content(filename: str):
+    """
+    Get the content of a TXT file as JSON response.
+    Useful for displaying in the frontend without opening a new tab.
+    
+    Args:
+        filename: The TXT filename
+        
+    Returns:
+        JSON with the TXT file content
+    """
+    # Security: only allow TXT files
+    if not filename.endswith(".txt"):
+        raise HTTPException(status_code=400, detail="Invalid file type - expected .txt")
+    
+    # Prevent path traversal
+    if ".." in filename or "/" in filename or "\\" in filename:
+        raise HTTPException(status_code=400, detail="Invalid filename")
+    
+    filepath = FILLED_FORMS_DIR / filename
+    
+    if not filepath.exists():
+        raise HTTPException(status_code=404, detail="TXT file not found")
+    
+    with open(filepath, "r", encoding="utf-8") as f:
+        content = f.read()
+    
+    return {
+        "success": True,
+        "filename": filename,
+        "content": content
+    }
+
+
+@router.get("/form/wyjasnienia/list")
+async def list_wyjasnienia_forms():
+    """
+    List all generated TXT forms for 'Wyjaśnienia poszkodowanego'.
+    
+    Returns:
+        List of TXT filenames available for download
+    """
+    txt_files = sorted(
+        [f.name for f in FILLED_FORMS_DIR.glob("WYJASNIENIA_*.txt")],
+        reverse=True  # Most recent first
+    )
+    return {"files": txt_files, "count": len(txt_files)}
 
 
 def get_pesel_folder(pesel: str) -> Path:
