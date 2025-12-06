@@ -206,6 +206,18 @@ body {
   transition: border-color 0.2s;
 }
 
+.form-input-error {
+  border-color: var(--error);
+  background: rgba(248, 113, 113, 0.05);
+}
+
+.field-error-text {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.85rem;
+  color: var(--error);
+}
+
 .form-input:focus,
 .form-textarea:focus {
   outline: none;
