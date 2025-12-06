@@ -7,7 +7,7 @@ from fastapi import APIRouter, HTTPException
 from fastapi.responses import FileResponse
 
 from models import FormResponse, ZawiadomienieOWypadku
-from services.validation import validate_data, validate_latest_filled_form
+from services.validation import validate_data
 from services.check_if_report_valid import check_if_report_valid
 from services.pdf_filler import generate_filled_pdf
 
@@ -25,13 +25,18 @@ async def submit_zawiadomienie(form_data: ZawiadomienieOWypadku):
     """
     Zawiadomienie o wypadku (druk ZUS EWYP).
 
-    Validates the form data with LLM, saves it as JSON, generates a filled PDF,
-    and returns success response with the PDF filename.
+    Flow:
+    1. Validates the form data against JSON schema
+    2. Saves the form as JSON
+    3. Validates with LLM (check_if_report_valid)
+    4. If LLM validation passes, generates a filled PDF
+    5. Returns success response with the PDF filename
     """
     form_dict = form_data.model_dump()
+    
+    # Step 1: Schema validation
     validation = validate_data(form_dict)
 
-    # Jeśli walidacja się nie powiedzie – NIE zapisujemy pliku
     if not validation["success"]:
         return FormResponse(
             success=False,
@@ -42,16 +47,18 @@ async def submit_zawiadomienie(form_data: ZawiadomienieOWypadku):
             },
         )
 
-    # Walidacja OK – dopiero teraz zapisujemy plik
+    # Step 2: Save to JSON file
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
     json_filename = f"{timestamp}.json"
     json_filepath = FILLED_FORMS_DIR / json_filename
 
-    with open(filepath, "w", encoding="utf-8") as f:
+    with open(json_filepath, "w", encoding="utf-8") as f:
         json.dump(form_dict, f, ensure_ascii=False, indent=2)
 
-    # Validate with LLM
-    logger.info(f"Validating form data: {form_dict['informacjaOWypadku']}")
+    logger.info(f"Form saved to {json_filename}")
+
+    # Step 3: Validate with LLM
+    logger.info(f"Validating form data with LLM: {form_dict['informacjaOWypadku']}")
     validity_check = check_if_report_valid(form_dict["informacjaOWypadku"])
     
     # Build field errors dict for frontend (only include fields that have warnings)
@@ -74,7 +81,7 @@ async def submit_zawiadomienie(form_data: ZawiadomienieOWypadku):
         if field_value:
             field_errors[field] = field_value
     
-    # If validation failed, return errors without generating PDF
+    # If LLM validation failed, return errors without generating PDF
     if not validity_check.valid:
         return FormResponse(
             success=False,
@@ -88,7 +95,7 @@ async def submit_zawiadomienie(form_data: ZawiadomienieOWypadku):
             }
         )
     
-    # Validation passed - generate filled PDF
+    # Step 4: LLM validation passed - generate filled PDF
     try:
         pdf_path = generate_filled_pdf(
             form_data=form_dict,
@@ -101,7 +108,7 @@ async def submit_zawiadomienie(form_data: ZawiadomienieOWypadku):
         logger.error(f"PDF template not found: {e}")
         return FormResponse(
             success=True,
-            message=f"Formularz zweryfikowany, ale generowanie PDF nie powiodło się: brak szablonu",
+            message="Formularz zweryfikowany, ale generowanie PDF nie powiodło się: brak szablonu",
             data={
                 "valid": True,
                 "comment": validity_check.comment,
@@ -124,38 +131,9 @@ async def submit_zawiadomienie(form_data: ZawiadomienieOWypadku):
             }
         )
 
+    # Step 5: All done - return success
     return FormResponse(
         success=True,
-        message=f"Zawiadomienie o wypadku saved as {filename}. Dane są poprawne.",
-        data={
-            "form": form_dict,
-            "filename": filename,
-            "errors": [],
-        },
-    )
-
-
-@router.get("/form/validate-latest", response_model=FormResponse)
-async def validate_latest_form():
-    """
-    Waliduje najnowszy zapisany plik z katalogu `filled_forms`
-    względem `schema.json` (po znormalizowaniu pól typu value/annotation/parsed).
-
-    Przeznaczone do wywołania z frontendu po kliknięciu „Wyślij”.
-    """
-    result = validate_latest_filled_form()
-
-    if result["success"]:
-        return FormResponse(
-            success=True,
-            message=f"Plik {result['filename']} jest poprawny.",
-            data={"filename": result["filename"], "errors": []},
-        )
-
-    return FormResponse(
-        success=False,
-        message=f"Plik {result['filename']} zawiera błędy walidacji.",
-        data={"filename": result["filename"], "errors": result["errors"]},
         message="Formularz został zweryfikowany pomyślnie i PDF został wygenerowany.",
         data={
             "valid": True,

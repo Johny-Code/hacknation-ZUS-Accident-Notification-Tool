@@ -27,7 +27,7 @@
           "miejsceUrodzenia": { "type": "string" },
           "numerTelefonu": { "type": "string" }
         },
-        "required": ["pesel", "imie", "nazwisko", "dataUrodzenia", "miejsceUrodzenia"],
+        "required": ["pesel", "dokumentTozsamosci", "imie", "nazwisko", "dataUrodzenia", "miejsceUrodzenia", "numerTelefonu"],
         "additionalProperties": false
       },
   
@@ -41,7 +41,7 @@
           "miejscowosc": { "type": "string" },
           "nazwaPanstwa": { "type": "string" }
         },
-        "required": ["ulica", "numerDomu", "kodPocztowy", "miejscowosc"],
+        "required": ["ulica", "numerDomu", "kodPocztowy", "miejscowosc", "nazwaPanstwa"],
         "additionalProperties": false
       },
   
@@ -196,7 +196,7 @@
           "maszynaPosiadaAtestLubDeklaracjeZgodnosci": { "type": "boolean" },
           "maszynaWpisanaDoEwidencjiSrodkowTrwalych": { "type": "boolean" }
         },
-        "required": ["dataWypadku", "miejsceWypadku"],
+        "required": ["dataWypadku", "godzinaWypadku", "miejsceWypadku", "planowanaGodzinaRozpoczeciaPracy", "planowanaGodzinaZakonczeniaPracy", "rodzajDoznanychUrazow", "opisOkolicznosciMiejscaIPrzyczyn", "pierwszaPomocUdzielona", "organProwadzacyPostepowanie", "wypadekPodczasObslugiMaszynLubUrzadzen"],
         "additionalProperties": false
       },
   
@@ -258,7 +258,6 @@
         "required": [],
         "additionalProperties": false
       },
-  
       "sposobOdbioruOdpowiedzi": {
         "type": "string",
         "enum": [
@@ -267,7 +266,6 @@
           "na_koncie_PUE_ZUS"
         ]
       },
-  
       "oswiadczenie": {
         "type": "object",
         "properties": {

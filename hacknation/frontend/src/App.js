@@ -171,6 +171,7 @@ const AddressForm = ({
   includeCorrespondenceMethod = false,
   fieldDescriptions = {},
   fieldErrors = {},
+  requiredFields = [],
 }) => {
   if (!data) return null;
 
@@ -189,6 +190,7 @@ const AddressForm = ({
             }`}
             value={data.sposobKorespondencji || ''}
             onChange={(e) => updateField([...path, 'sposobKorespondencji'], e.target.value)}
+            required={requiredFields.includes('sposobKorespondencji')}
           >
             <option value="">{t('form.options.sposob_korespondencji.placeholder')}</option>
             <option value="adres">{t('form.options.sposob_korespondencji.adres')}</option>
@@ -214,6 +216,7 @@ const AddressForm = ({
           }`}
           value={data.ulica || ''}
           onChange={(e) => updateField([...path, 'ulica'], e.target.value)}
+          required={requiredFields.includes('ulica')}
         />
         {fieldErrors[`${baseKey}.ulica`] && (
           <span className="field-error-text">{fieldErrors[`${baseKey}.ulica`]}</span>
@@ -230,6 +233,7 @@ const AddressForm = ({
             }`}
             value={data.numerDomu || ''}
             onChange={(e) => updateField([...path, 'numerDomu'], e.target.value)}
+            required={requiredFields.includes('numerDomu')}
           />
           {fieldErrors[`${baseKey}.numerDomu`] && (
             <span className="field-error-text">{fieldErrors[`${baseKey}.numerDomu`]}</span>
@@ -261,6 +265,7 @@ const AddressForm = ({
             }`}
             value={data.kodPocztowy || ''}
             onChange={(e) => updateField([...path, 'kodPocztowy'], e.target.value)}
+            required={requiredFields.includes('kodPocztowy')}
           />
           {fieldErrors[`${baseKey}.kodPocztowy`] && (
             <span className="field-error-text">{fieldErrors[`${baseKey}.kodPocztowy`]}</span>
@@ -275,6 +280,7 @@ const AddressForm = ({
             }`}
             value={data.miejscowosc || ''}
             onChange={(e) => updateField([...path, 'miejscowosc'], e.target.value)}
+            required={requiredFields.includes('miejscowosc')}
           />
           {fieldErrors[`${baseKey}.miejscowosc`] && (
             <span className="field-error-text">{fieldErrors[`${baseKey}.miejscowosc`]}</span>
@@ -292,6 +298,7 @@ const AddressForm = ({
             }`}
             value={data.nazwaPanstwa || ''}
             onChange={(e) => updateField([...path, 'nazwaPanstwa'], e.target.value)}
+            required={requiredFields.includes('nazwaPanstwa')}
           />
           {fieldErrors[`${baseKey}.nazwaPanstwa`] && (
             <span className="field-error-text">{fieldErrors[`${baseKey}.nazwaPanstwa`]}</span>
@@ -387,7 +394,7 @@ function FormPage({ t }) {
       opisOkolicznosciMiejscaIPrzyczyn: 'Podczas przenoszenia ciężkich paczek w magazynie, pracownik potknął się o niezabezpieczoną paletę i upadł na betonową posadzkę. W wyniku upadku doznał złamania przedramienia prawego. Miejsce wypadku było słabo oświetlone, a paleta nie była oznaczona.',
       pierwszaPomocUdzielona: true,
       placowkaUdzielajacaPierwszejPomocy: 'Szpitalny Oddział Ratunkowy, Szpital Bielański, Warszawa',
-      organProwadzacyPostepowanie: '',
+      organProwadzacyPostepowanie: 'Policja Polska',
       wypadekPodczasObslugiMaszynLubUrzadzen: false,
       opisStanuMaszynyIUzytkowania: '',
       maszynaPosiadaAtestLubDeklaracjeZgodnosci: false,
@@ -450,16 +457,37 @@ function FormPage({ t }) {
     // Głęboka kopia, żeby nie mutować stanu Reacta
     const payload = JSON.parse(JSON.stringify(data));
 
+    // Funkcja pomocnicza do usuwania pustych wartości
+    const removeEmptyValues = (obj) => {
+      if (obj === null || obj === undefined) return undefined;
+      if (typeof obj !== 'object') return obj === '' ? undefined : obj;
+      
+      if (Array.isArray(obj)) {
+        const filtered = obj.map(removeEmptyValues).filter(item => item !== undefined);
+        return filtered.length > 0 ? filtered : undefined;
+      }
+      
+      const cleaned = {};
+      let hasContent = false;
+      
+      for (const [key, value] of Object.entries(obj)) {
+        const cleanedValue = removeEmptyValues(value);
+        if (cleanedValue !== undefined) {
+          cleaned[key] = cleanedValue;
+          hasContent = true;
+        }
+      }
+      
+      return hasContent ? cleaned : undefined;
+    };
+
     // Jeśli osoba zawiadamiająca jest tą samą osobą co poszkodowana,
     // usuń WSZYSTKIE pola tej osoby oprócz flagi jestPoszkodowanym
     if (payload.daneOsobyKtoraZawiadamia?.jestPoszkodowanym) {
       // Zostaw tylko flagę
-      delete payload.daneOsobyKtoraZawiadamia.pesel;
-      delete payload.daneOsobyKtoraZawiadamia.dokumentTozsamosci;
-      delete payload.daneOsobyKtoraZawiadamia.imie;
-      delete payload.daneOsobyKtoraZawiadamia.nazwisko;
-      delete payload.daneOsobyKtoraZawiadamia.dataUrodzenia;
-      delete payload.daneOsobyKtoraZawiadamia.numerTelefonu;
+      payload.daneOsobyKtoraZawiadamia = {
+        jestPoszkodowanym: true
+      };
 
       delete payload.adresZamieszkaniaOsobyKtoraZawiadamia;
       delete payload.adresOstatniegoMiejscaZamieszkaniaWPolsceLubPobytuOsobyKtoraZawiadamia;
@@ -471,6 +499,9 @@ function FormPage({ t }) {
       payload.daneSwiadkowWypadku = payload.daneSwiadkowWypadku.filter(
         (swiadek) => swiadek.imie && swiadek.nazwisko
       );
+      if (payload.daneSwiadkowWypadku.length === 0) {
+        delete payload.daneSwiadkowWypadku;
+      }
     }
 
     // Usuń dokumentTozsamosci jeśli jest pusty (gdy rodzaj i seriaINumer są puste)
@@ -482,8 +513,11 @@ function FormPage({ t }) {
       delete payload.daneOsobyPoszkodowanej.dokumentTozsamosci;
     }
 
-    console.log('📤 Payload to send:', payload);
-    return payload;
+    // Wyczyść wszystkie puste wartości z całego payloadu
+    const cleanedPayload = removeEmptyValues(payload);
+
+    console.log('📤 Payload to send:', cleanedPayload);
+    return cleanedPayload;
   };
 
   const handleSubmit = async (e) => {
@@ -536,16 +570,6 @@ function FormPage({ t }) {
       )}
 
       <div className="form-card">
-        {validationErrors && validationErrors.comment && (
-          <div className="validation-banner">
-            <div className="validation-banner-icon">⚠️</div>
-            <div className="validation-banner-content">
-              <h3 className="validation-banner-title">{t('form.validation_error_title') || 'Formularz wymaga uzupełnienia'}</h3>
-              <p className="validation-banner-message">{validationErrors.comment}</p>
-            </div>
-          </div>
-        )}
-        
         <form onSubmit={handleSubmit}>
           {/* 1. Dane osoby poszkodowanej */}
           <h2 className="section-title">{t('form.sections.daneOsobyPoszkodowanej')}</h2>
@@ -585,6 +609,7 @@ function FormPage({ t }) {
               className={`form-input ${fieldErrors['daneOsobyPoszkodowanej.pesel'] ? 'form-input-error' : ''}`}
               value={formData.daneOsobyPoszkodowanej.pesel}
               onChange={(e) => updateField(['daneOsobyPoszkodowanej', 'pesel'], e.target.value)}
+              required
             />
             {fieldErrors['daneOsobyPoszkodowanej.pesel'] && (
               <span className="field-error-text">{fieldErrors['daneOsobyPoszkodowanej.pesel']}</span>
@@ -599,6 +624,7 @@ function FormPage({ t }) {
                 className={`form-input ${fieldErrors['daneOsobyPoszkodowanej.dataUrodzenia'] ? 'form-input-error' : ''}`}
                 value={formData.daneOsobyPoszkodowanej.dataUrodzenia}
                 onChange={(e) => updateField(['daneOsobyPoszkodowanej', 'dataUrodzenia'], e.target.value)}
+                required
               />
               {fieldErrors['daneOsobyPoszkodowanej.dataUrodzenia'] && (
                 <span className="field-error-text">{fieldErrors['daneOsobyPoszkodowanej.dataUrodzenia']}</span>
@@ -611,6 +637,7 @@ function FormPage({ t }) {
                 className={`form-input ${fieldErrors['daneOsobyPoszkodowanej.miejsceUrodzenia'] ? 'form-input-error' : ''}`}
                 value={formData.daneOsobyPoszkodowanej.miejsceUrodzenia}
                 onChange={(e) => updateField(['daneOsobyPoszkodowanej', 'miejsceUrodzenia'], e.target.value)}
+                required
               />
               {fieldErrors['daneOsobyPoszkodowanej.miejsceUrodzenia'] && (
                 <span className="field-error-text">{fieldErrors['daneOsobyPoszkodowanej.miejsceUrodzenia']}</span>
@@ -626,6 +653,7 @@ function FormPage({ t }) {
                 className={`form-input ${fieldErrors['daneOsobyPoszkodowanej.dokumentTozsamosci.rodzaj'] ? 'form-input-error' : ''}`}
                 value={formData.daneOsobyPoszkodowanej.dokumentTozsamosci.rodzaj}
                 onChange={(e) => updateField(['daneOsobyPoszkodowanej', 'dokumentTozsamosci', 'rodzaj'], e.target.value)}
+                required
               />
               {fieldErrors['daneOsobyPoszkodowanej.dokumentTozsamosci.rodzaj'] && (
                 <span className="field-error-text">{fieldErrors['daneOsobyPoszkodowanej.dokumentTozsamosci.rodzaj']}</span>
@@ -638,6 +666,7 @@ function FormPage({ t }) {
                 className={`form-input ${fieldErrors['daneOsobyPoszkodowanej.dokumentTozsamosci.seriaINumer'] ? 'form-input-error' : ''}`}
                 value={formData.daneOsobyPoszkodowanej.dokumentTozsamosci.seriaINumer}
                 onChange={(e) => updateField(['daneOsobyPoszkodowanej', 'dokumentTozsamosci', 'seriaINumer'], e.target.value)}
+                required
               />
               {fieldErrors['daneOsobyPoszkodowanej.dokumentTozsamosci.seriaINumer'] && (
                 <span className="field-error-text">{fieldErrors['daneOsobyPoszkodowanej.dokumentTozsamosci.seriaINumer']}</span>
@@ -647,7 +676,7 @@ function FormPage({ t }) {
 
           <div className="form-group">
             <label className="form-label">{t('form.fields.numer_telefonu')}</label>
-            <input type="text" className="form-input" value={formData.daneOsobyPoszkodowanej.numerTelefonu} onChange={(e) => updateField(['daneOsobyPoszkodowanej', 'numerTelefonu'], e.target.value)} />
+            <input type="text" className="form-input" value={formData.daneOsobyPoszkodowanej.numerTelefonu} onChange={(e) => updateField(['daneOsobyPoszkodowanej', 'numerTelefonu'], e.target.value)} required />
             <p className="field-description" style={{ whiteSpace: 'pre-wrap' }}>{t('form.hints.numer_telefonu')}</p>
           </div>
 
@@ -661,6 +690,7 @@ function FormPage({ t }) {
             includeCountry={true}
             fieldDescriptions={{ nazwaPanstwa: t('form.hints.nazwa_panstwa') }}
             fieldErrors={fieldErrors}
+            requiredFields={['ulica', 'numerDomu', 'kodPocztowy', 'miejscowosc', 'nazwaPanstwa']}
           />
           
           <AddressForm 
@@ -684,6 +714,7 @@ function FormPage({ t }) {
             includeCorrespondenceMethod={true}
             fieldDescriptions={{ nazwaPanstwa: t('form.hints.nazwa_panstwa_twoj') }}
             fieldErrors={fieldErrors}
+            requiredFields={['sposobKorespondencji']}
           />
           
           <AddressForm 
@@ -788,6 +819,7 @@ function FormPage({ t }) {
                 includeCorrespondenceMethod={true} 
                 fieldDescriptions={{ nazwaPanstwa: t('form.hints.nazwa_panstwa_twoj') }}
                 fieldErrors={fieldErrors}
+                requiredFields={['sposobKorespondencji']}
               />
             </>
           )}
@@ -804,20 +836,20 @@ function FormPage({ t }) {
             </div>
             <div className="form-group">
               <label className="form-label">{t('form.fields.godzina_wypadku')}</label>
-              <input type="time" className={`form-input ${validationErrors?.fieldErrors?.godzinaWypadku ? 'input-warning' : ''}`} value={formData.informacjaOWypadku.godzinaWypadku} onChange={(e) => updateField(['informacjaOWypadku', 'godzinaWypadku'], e.target.value)} />
+              <input type="time" className={`form-input ${validationErrors?.fieldErrors?.godzinaWypadku ? 'input-warning' : ''}`} value={formData.informacjaOWypadku.godzinaWypadku} onChange={(e) => updateField(['informacjaOWypadku', 'godzinaWypadku'], e.target.value)} required />
               <FieldWarning message={validationErrors?.fieldErrors?.godzinaWypadku} />
             </div>
           </div>
           
-           <div className="form-row">
+          <div className="form-row">
             <div className="form-group">
               <label className="form-label">{t('form.fields.planowana_godzina_rozpoczecia')}</label>
-              <input type="time" className={`form-input ${validationErrors?.fieldErrors?.planowanaGodzinaRozpoczeciaPracy ? 'input-warning' : ''}`} value={formData.informacjaOWypadku.planowanaGodzinaRozpoczeciaPracy} onChange={(e) => updateField(['informacjaOWypadku', 'planowanaGodzinaRozpoczeciaPracy'], e.target.value)} />
+              <input type="time" className={`form-input ${validationErrors?.fieldErrors?.planowanaGodzinaRozpoczeciaPracy ? 'input-warning' : ''}`} value={formData.informacjaOWypadku.planowanaGodzinaRozpoczeciaPracy} onChange={(e) => updateField(['informacjaOWypadku', 'planowanaGodzinaRozpoczeciaPracy'], e.target.value)} required />
               <FieldWarning message={validationErrors?.fieldErrors?.planowanaGodzinaRozpoczeciaPracy} />
             </div>
             <div className="form-group">
               <label className="form-label">{t('form.fields.planowana_godzina_zakonczenia')}</label>
-              <input type="time" className={`form-input ${validationErrors?.fieldErrors?.planowanaGodzinaZakonczeniaPracy ? 'input-warning' : ''}`} value={formData.informacjaOWypadku.planowanaGodzinaZakonczeniaPracy} onChange={(e) => updateField(['informacjaOWypadku', 'planowanaGodzinaZakonczeniaPracy'], e.target.value)} />
+              <input type="time" className={`form-input ${validationErrors?.fieldErrors?.planowanaGodzinaZakonczeniaPracy ? 'input-warning' : ''}`} value={formData.informacjaOWypadku.planowanaGodzinaZakonczeniaPracy} onChange={(e) => updateField(['informacjaOWypadku', 'planowanaGodzinaZakonczeniaPracy'], e.target.value)} required />
               <FieldWarning message={validationErrors?.fieldErrors?.planowanaGodzinaZakonczeniaPracy} />
             </div>
           </div>
@@ -830,7 +862,7 @@ function FormPage({ t }) {
 
           <div className="form-group">
             <label className="form-label">{t('form.fields.rodzaj_urazow')}</label>
-            <input type="text" className={`form-input ${validationErrors?.fieldErrors?.rodzajDoznanychUrazow ? 'input-warning' : ''}`} value={formData.informacjaOWypadku.rodzajDoznanychUrazow} onChange={(e) => updateField(['informacjaOWypadku', 'rodzajDoznanychUrazow'], e.target.value)} />
+            <input type="text" className={`form-input ${validationErrors?.fieldErrors?.rodzajDoznanychUrazow ? 'input-warning' : ''}`} value={formData.informacjaOWypadku.rodzajDoznanychUrazow} onChange={(e) => updateField(['informacjaOWypadku', 'rodzajDoznanychUrazow'], e.target.value)} required />
             <FieldWarning message={validationErrors?.fieldErrors?.rodzajDoznanychUrazow} />
           </div>
 
@@ -857,7 +889,7 @@ function FormPage({ t }) {
 
           <div className="form-group">
              <label className="form-label">{t('form.fields.organ_prowadzacy')}</label>
-             <input type="text" className={`form-input ${validationErrors?.fieldErrors?.organProwadzacyPostepowanie ? 'input-warning' : ''}`} value={formData.informacjaOWypadku.organProwadzacyPostepowanie} onChange={(e) => updateField(['informacjaOWypadku', 'organProwadzacyPostepowanie'], e.target.value)} />
+             <input type="text" className={`form-input ${validationErrors?.fieldErrors?.organProwadzacyPostepowanie ? 'input-warning' : ''}`} value={formData.informacjaOWypadku.organProwadzacyPostepowanie} onChange={(e) => updateField(['informacjaOWypadku', 'organProwadzacyPostepowanie'], e.target.value)} required />
              <FieldWarning message={validationErrors?.fieldErrors?.organProwadzacyPostepowanie} />
           </div>
 
@@ -1026,6 +1058,7 @@ function FormPage({ t }) {
               }`}
               value={formData.sposobOdbioruOdpowiedzi || ''}
               onChange={(e) => updateField(['sposobOdbioruOdpowiedzi'], e.target.value)}
+              required
             >
               <option value="">{t('form.options.sposob_odbioru.placeholder')}</option>
               <option value="w_placowce_ZUS">
