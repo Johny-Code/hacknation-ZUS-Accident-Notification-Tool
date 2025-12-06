@@ -55,9 +55,11 @@ function HomePage({ t }) {
 
 // Scan Page
 function SkanPage({ t }) {
+  const navigate = useNavigate();
   const [file, setFile] = useState(null);
   const [status, setStatus] = useState(null);
   const [ocrResult, setOcrResult] = useState(null);
+  const [validationData, setValidationData] = useState(null);
   const [dragOver, setDragOver] = useState(false);
 
   const getUserId = () => {
@@ -77,6 +79,7 @@ function SkanPage({ t }) {
 
     setFile(selectedFile);
     setOcrResult(null);
+    setValidationData(null);
     setStatus({ type: 'loading', message: t('skan.uploading') });
 
     const formData = new FormData();
@@ -93,13 +96,36 @@ function SkanPage({ t }) {
       const data = await response.json();
       
       if (response.ok && data.success) {
-        setStatus({ type: 'success', message: t('skan.success') });
+        // Successful validation
+        setStatus({ type: 'success', message: data.message });
         setOcrResult(data.ocr_result);
+        setValidationData(data.data);
+      } else if (response.ok && !data.success) {
+        // Validation failed
+        setStatus({ type: 'error', message: data.message });
+        setOcrResult(data.ocr_result);
+        setValidationData(data.data);
       } else {
         setStatus({ type: 'error', message: data.detail || t('skan.error') });
       }
     } catch (error) {
+      console.error('Error uploading file:', error);
       setStatus({ type: 'error', message: t('skan.error') });
+    }
+  };
+
+  const handleReloadScan = () => {
+    setFile(null);
+    setStatus(null);
+    setOcrResult(null);
+    setValidationData(null);
+    document.getElementById('file-input').value = '';
+  };
+
+  const handleGoToForm = () => {
+    if (validationData && validationData.formData) {
+      // Navigate to form with pre-filled data
+      navigate('/form', { state: { prefilledData: validationData.formData } });
     }
   };
 
@@ -146,12 +172,80 @@ function SkanPage({ t }) {
         </div>
       )}
 
-      {ocrResult && (
+      {/* Validation stage information */}
+      {validationData && validationData.validationStage && (
+        <div className="form-card validation-section">
+          <h3>
+            {validationData.validationStage === 'schema' && '📋 Wstępna walidacja'}
+            {validationData.validationStage === 'llm' && '🔍 Walidacja merytoryczna'}
+            {validationData.validationStage === 'completed' && '✅ Walidacja zakończona'}
+          </h3>
+
+          {/* Show field errors */}
+          {validationData.fieldErrors && Object.keys(validationData.fieldErrors).length > 0 && (
+            <div className="validation-errors-section">
+              <h4 className="validation-errors-title">Błędy walidacji:</h4>
+              <ul className="validation-errors-list">
+                {Object.entries(validationData.fieldErrors).map(([field, error]) => (
+                  <li key={field} className="validation-error-item">
+                    <strong>{field}:</strong> {error}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {/* Show schema validation errors */}
+          {validationData.errors && validationData.errors.length > 0 && (
+            <div className="validation-errors-section">
+              <h4 className="validation-warnings-title">Niekompletne pola:</h4>
+              <ul className="validation-errors-list">
+                {validationData.errors.map((error, index) => (
+                  <li key={index} className="validation-warning-item">
+                    <strong>{error.path.join(' → ')}:</strong> {error.message}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {/* User options */}
+          {validationData.userOptions && validationData.userOptions.length > 0 && (
+            <div className="validation-actions">
+              {validationData.userOptions.includes('reload_scan') && (
+                <button onClick={handleReloadScan} className="action-button-reload">
+                  🔄 Załaduj skan ponownie
+                </button>
+              )}
+              {validationData.userOptions.includes('fill_form') && (
+                <button onClick={handleGoToForm} className="action-button-form">
+                  📝 Przejdź do formularza
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Show OCR result for successful validation */}
+      {ocrResult && validationData && validationData.valid && (
         <div className="ocr-result">
           <h3 className="ocr-result-title">{t('skan.ocr_result')}</h3>
           <pre className="json-preview" style={{ textAlign: 'left', overflow: 'auto', maxHeight: '500px' }}>
             {typeof ocrResult === 'string' ? ocrResult : JSON.stringify(ocrResult, null, 2)}
           </pre>
+          
+          {validationData.pdf_filename && (
+            <div style={{ padding: '1.5rem' }}>
+              <a
+                href={`${API_URL}/form/download/${validationData.pdf_filename}`}
+                download
+                className="download-button"
+              >
+                📥 Pobierz wygenerowany PDF
+              </a>
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -341,6 +435,8 @@ const FieldWarning = ({ message }) => {
 // Form Page - Zawiadomienie o wypadku (ZUS EWYP schema)
 function FormPage({ t }) {
   const navigate = useNavigate();
+  const location = useLocation();
+  
   const initialFormData = {
     daneOsobyPoszkodowanej: {
       pesel: '90010112345',
@@ -423,12 +519,52 @@ function FormPage({ t }) {
     },
   };
 
-  const [formData, setFormData] = useState(initialFormData);
+  // Deep merge function to combine initialFormData with prefilledData
+  const deepMerge = (target, source) => {
+    const output = { ...target };
+    if (isObject(target) && isObject(source)) {
+      Object.keys(source).forEach(key => {
+        if (isObject(source[key])) {
+          if (!(key in target)) {
+            Object.assign(output, { [key]: source[key] });
+          } else {
+            output[key] = deepMerge(target[key], source[key]);
+          }
+        } else {
+          Object.assign(output, { [key]: source[key] });
+        }
+      });
+    }
+    return output;
+  };
+
+  const isObject = (item) => {
+    return item && typeof item === 'object' && !Array.isArray(item);
+  };
+
+  // Check if there's prefilled data from scan
+  const prefilledData = location.state?.prefilledData;
+  const startingFormData = prefilledData ? deepMerge(initialFormData, prefilledData) : initialFormData;
+
+  const [formData, setFormData] = useState(startingFormData);
   const [status, setStatus] = useState(null);
   const [loading, setLoading] = useState(false);
   const [validationErrors, setValidationErrors] = useState(null);
   const [fieldErrors, setFieldErrors] = useState({});
   const [activeWitnesses, setActiveWitnesses] = useState([true, false, false]);
+
+  // Show notification if data was prefilled from scan
+  useEffect(() => {
+    if (prefilledData) {
+      // Scroll to top when form is loaded with prefilled data
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      
+      setStatus({ 
+        type: 'info', 
+        message: '📋 Formularz został wypełniony danymi ze skanu. Sprawdź i popraw dane przed wysłaniem.' 
+      });
+    }
+  }, [prefilledData]);
 
   const updateField = (path, value) => {
     setFormData((prev) => {
