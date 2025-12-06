@@ -96,10 +96,20 @@ function SkanPage({ t }) {
       const data = await response.json();
       
       if (response.ok && data.success) {
-        // Successful validation
-        setStatus({ type: 'success', message: data.message });
-        setOcrResult(data.ocr_result);
-        setValidationData(data.data);
+        // Successful validation - navigate to success-pdf page
+        if (data.data?.valid && data.data?.pdf_filename) {
+          navigate('/success-pdf', {
+            state: {
+              pdfFilename: data.data.pdf_filename,
+              peselFolderPath: data.data.pesel_folder_path,
+              validationComment: data.data.comment
+            }
+          });
+        } else {
+          setStatus({ type: 'success', message: data.message });
+          setOcrResult(data.ocr_result);
+          setValidationData(data.data);
+        }
       } else if (response.ok && !data.success) {
         // Validation failed
         setStatus({ type: 'error', message: data.message });

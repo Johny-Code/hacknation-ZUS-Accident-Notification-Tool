@@ -3,6 +3,7 @@ from typing import Optional
 import uuid
 import json
 import logging
+import shutil
 from datetime import datetime
 from pathlib import Path
 
@@ -12,6 +13,7 @@ from services.ocr import process_pdf_ocr
 from services.validation import validate_data
 from services.check_if_report_valid import check_if_report_valid
 from services.pdf_filler import generate_filled_pdf
+from routes.form import get_pesel_folder
 
 logger = logging.getLogger(__name__)
 
@@ -20,6 +22,10 @@ router = APIRouter(tags=["scan"])
 # Directory for storing filled forms (JSON and PDF) from scans
 FILLED_FORMS_DIR = Path(__file__).parent.parent / "filled_forms"
 FILLED_FORMS_DIR.mkdir(exist_ok=True)
+
+# Directory for PESEL-based PDF storage
+PDFS_DIR = Path(__file__).parent.parent / "pdfs"
+PDFS_DIR.mkdir(exist_ok=True)
 
 
 @router.post("/skan", response_model=ScanResponse)
@@ -114,11 +120,6 @@ async def upload_scan(
                 ]
             }
         )
-    else:
-        # TODO Jan please handle this to wyświetlanie PDF
-        pass
-
-
     # Schema validation passed
     logger.info("Schema validation passed - proceeding to LLM validation")
     
@@ -239,7 +240,22 @@ async def upload_scan(
             }
         )
     
-    # Step 5: Success - all done
+    # Step 5: Save PDF to PESEL folder
+    pesel = ocr_data.get("daneOsobyPoszkodowanej", {}).get("pesel", "")
+    pesel_folder_path = None
+    
+    if pesel and len(pesel) == 11 and pesel.isdigit():
+        try:
+            target_folder = get_pesel_folder(pesel)
+            target_path = target_folder / pdf_filename
+            shutil.copy2(pdf_path, target_path)
+            pesel_folder_path = f"{target_folder.name}/{pdf_filename}"
+            logger.info(f"PDF automatically saved to PESEL folder: {target_path}")
+        except Exception as e:
+            logger.error(f"Failed to save PDF to PESEL folder: {e}")
+            # Continue anyway - the PDF is still in filled_forms
+    
+    # Step 6: Success - all done
     return ScanResponse(
         success=True,
         message="Wstępna walidacja przebiegła pomyślnie, dane są poprawnie wypełnione. Walidacja merytoryczna zakończona sukcesem. PDF został wygenerowany.",
@@ -256,6 +272,7 @@ async def upload_scan(
             "fieldErrors": field_errors,
             "json_filename": json_filename,
             "pdf_filename": pdf_filename,
+            "pesel_folder_path": pesel_folder_path,
             "document_type": ocr_result["document_type"]
         }
     )
