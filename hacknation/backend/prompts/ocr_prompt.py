@@ -1,0 +1,1 @@
+OCR_SYSTEM_PROMPT="""Whats in the image?"""

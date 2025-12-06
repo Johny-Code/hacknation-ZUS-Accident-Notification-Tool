@@ -1,0 +1,115 @@
+{
+  "app": {
+    "title": "Zgłoszenie Wypadku przy Pracy",
+    "subtitle": "Wybierz sposób zgłoszenia"
+  },
+  "navigation": {
+    "skan": "Skan",
+    "formularz": "Formularz",
+    "voicechat": "Asystent głosowy",
+    "home": "Strona główna"
+  },
+  "skan": {
+    "title": "Prześlij skan dokumentu",
+    "description": "Załaduj skan dokumentu PDF związanego z wypadkiem",
+    "dropzone": "Przeciągnij plik tutaj lub kliknij aby wybrać",
+    "pdf_hint": "Akceptowane tylko pliki PDF",
+    "pdf_only": "Dozwolone są tylko pliki PDF",
+    "uploading": "Przesyłanie i przetwarzanie...",
+    "success": "Plik przesłany i przetworzony pomyślnie",
+    "error": "Błąd podczas przesyłania",
+    "ocr_result": "Wynik analizy dokumentu"
+  },
+  "form": {
+    "title": "Zawiadomienie o wypadku",
+    "sections": {
+      "daneOsobyPoszkodowanej": "Dane osoby poszkodowanej",
+      "adresZamieszkaniaOsobyPoszkodowanej": "Adres zamieszkania osoby poszkodowanej",
+      "adresOstatniegoMiejsca": "Adres ostatniego miejsca zamieszkania/pobytu w Polsce",
+      "adresDoKorespondencji": "Adres do korespondencji",
+      "adresDzialalnosci": "Adres miejsca prowadzenia działalności",
+      "adresOpieki": "Adres sprawowania opieki nad dzieckiem",
+      "daneOsobyZawiadamiajacej": "Dane osoby zawiadamiającej",
+      "adresZamieszkaniaOsobyZawiadamiajacej": "Adres zamieszkania osoby zawiadamiającej",
+      "informacjaOWypadku": "Informacje o wypadku",
+      "daneSwiadkow": "Dane świadków wypadku",
+      "zalaczniki": "Załączniki",
+      "dokumentyPozniej": "Dokumenty do dostarczenia później",
+      "oswiadczenie": "Oświadczenie",
+      "sposobOdbioru": "Sposób odbioru odpowiedzi"
+    },
+    "preview_title": "Podgląd wysyłanych danych",
+    "fields": {
+      "imie": "Imię",
+      "nazwisko": "Nazwisko",
+      "pesel": "PESEL",
+      "numer_telefonu": "Numer telefonu",
+      "dataUrodzenia": "Data urodzenia",
+      "miejsceUrodzenia": "Miejsce urodzenia",
+      "dokumentRodzaj": "Rodzaj dokumentu tożsamości",
+      "dokumentSeriaNumer": "Seria i numer dokumentu",
+      "ulica": "Ulica",
+      "numer_domu": "Numer domu",
+      "numer_lokalu": "Numer lokalu",
+      "kod_pocztowy": "Kod pocztowy",
+      "miejscowosc": "Miejscowość",
+      "nazwa_panstwa": "Nazwa państwa",
+      "sposob_korespondencji": "Sposób korespondencji",
+      "jest_poszkodowanym": "Czy osoba zawiadamiająca jest poszkodowanym?",
+      "data_wypadku": "Data wypadku",
+      "godzina_wypadku": "Godzina wypadku",
+      "miejsce_wypadku": "Miejsce wypadku",
+      "planowana_godzina_rozpoczecia": "Planowana godzina rozpoczęcia pracy",
+      "planowana_godzina_zakonczenia": "Planowana godzina zakończenia pracy",
+      "rodzaj_urazow": "Rodzaj doznanych urazów",
+      "opis_okolicznosci": "Szczegółowy opis okoliczności, miejsca i przyczyn wypadku",
+      "pierwsza_pomoc": "Czy udzielono pierwszej pomocy?",
+      "placowka_medyczna": "Placówka udzielająca pomocy",
+      "organ_prowadzacy": "Organ prowadzący postępowanie",
+      "maszyny_urzadzenia": "Czy wypadek zdarzył się podczas obsługi maszyn?",
+      "opis_stanu_maszyny": "Opis stanu maszyny i użytkowania",
+      "atest": "Czy maszyna posiada atest?",
+      "ewidencja": "Czy maszyna wpisana do ewidencji środków trwałych?",
+      "swiadek": "Świadek",
+      "karta_informacyjna": "Karta informacyjna / zaświadczenie pierwszej pomocy",
+      "postanowienie_prokuratury": "Postanowienie prokuratury",
+      "dokumenty_zgon": "Dokumenty dotyczące zgonu",
+      "dokumenty_karta_wypadku": "Dokumenty potwierdzające prawo do karty wypadku",
+      "inne_dokumenty": "Opis innych dokumentów",
+      "data_do": "Data dostarczenia dokumentów (do)",
+      "lista_dokumentow": "Lista dokumentów",
+      "data_zlozenia": "Data złożenia oświadczenia",
+      "podpis": "Podpis"
+    },
+    "hints": {
+      "nazwa_panstwa": "Podaj, jeśli adres jest inny niż polski",
+      "nazwa_panstwa_twoj": "Podaj, jeśli Twój adres jest inny niż polski",
+      "numer_telefonu": "Jeśli podasz tę informację, ułatwi nam to kontakt w Twojej sprawie. To pole jest dobrowolne.",
+      "adres_ostatniego_miejsca": "Podaj adres ostatniego miejsca zamieszkania w Polsce, jeśli obecnie mieszkasz za granicą, ale wcześniej mieszkałeś w Polsce. Jeśli nie masz adresu zamieszkania, podaj adres miejsca pobytu lub adres ostatniego miejsca zamieszkania w Polsce",
+      "adres_do_korespondencji": "Jeśli jako sposób korespondencji wybierzesz: – poste restante, podaj jedynie kod pocztowy placówki pocztowej oraz w polu Miejscowość wpisz nazwę tej placówki, – skrytkę pocztową / przegródkę pocztową, w polu Numer domu wpisz numer skrytki/przegródki, w polu Kod pocztowy wpisz kod pocztowy placówki oraz w polu Miejscowość wpisz nazwę placówki pocztowej.",
+      "adres_dzialalnosci": "Podaj, jeśli poszkodowany prowadzi pozarolniczą działalność albo współpracuje przy prowadzeniu takiej działalności",
+      "adres_opieki": "Podaj, jeśli poszkodowany wykonuje pracę na podstawie umowy uaktywniającej (jako niania)",
+      "dane_osoby_zawiadamiajacej": "Wypełnij, jeśli jesteś inną osobą niż poszkodowany",
+      "dokument_tozsamosci_brak_pesel": "Podaj, jeśli nie masz nadanego numeru PESEL",
+      "adres_zamieszkania_zawiadamiajacej": "Wypełnij, jeśli jesteś inną osobą niż poszkodowany",
+      "adres_ostatniego_miejsca_zawiadamiajacej": "Wypełnij, jeśli jesteś inną osobą niż poszkodowany. Podaj adres ostatniego miejsca zamieszkania w Polsce, jeśli obecnie mieszkasz za granicą, ale wcześniej mieszkałeś w Polsce. Jeśli nie masz adresu zamieszkania, podaj adres miejsca pobytu lub adres ostatniego miejsca zamieszkania w Polsce",
+      "adres_do_korespondencji_zawiadamiajacej": "Wypełnij, jeśli jesteś inną osobą niż poszkodowany i Twój adres do korespondencji jest inny niż adres zamieszkania / adres ostatniego miejsca zamieszkania w Polsce / adres miejsca pobytu"
+    },
+    "options": {
+      "sposob_korespondencji": {
+        "placeholder": "Wybierz sposób korespondencji...",
+        "adres": "adres",
+        "poste_restante": "poste restante",
+        "skrytka_pocztowa": "skrytka pocztowa",
+        "przegrodka_pocztowa": "przegródka pocztowa"
+      }
+    },
+    "submit": "Wyślij zgłoszenie",
+    "success": "Formularz wysłany pomyślnie",
+    "error": "Błąd podczas wysyłania"
+  },
+  "voice": {
+    "title": "Asystent głosowy",
+    "description": "Wkrótce dostępny - zgłoś wypadek rozmową z AI"
+  }
+}

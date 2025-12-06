@@ -1,0 +1,115 @@
+{
+  "app": {
+    "title": "Work Accident Report",
+    "subtitle": "Choose how to report"
+  },
+  "navigation": {
+    "skan": "Scan",
+    "formularz": "Form",
+    "voicechat": "Voice Assistant",
+    "home": "Home"
+  },
+  "skan": {
+    "title": "Upload document scan",
+    "description": "Upload a PDF document related to the accident",
+    "dropzone": "Drag file here or click to select",
+    "pdf_hint": "Only PDF files accepted",
+    "pdf_only": "Only PDF files are allowed",
+    "uploading": "Uploading and processing...",
+    "success": "File uploaded and processed successfully",
+    "error": "Upload error",
+    "ocr_result": "Document analysis result"
+  },
+  "form": {
+    "title": "Accident Notification Form",
+    "sections": {
+      "daneOsobyPoszkodowanej": "Injured person details",
+      "adresZamieszkaniaOsobyPoszkodowanej": "Injured person address",
+      "adresOstatniegoMiejsca": "Address of last residence/stay in Poland",
+      "adresDoKorespondencji": "Correspondence address",
+      "adresDzialalnosci": "Business activity address",
+      "adresOpieki": "Childcare address",
+      "daneOsobyZawiadamiajacej": "Notifier details",
+      "adresZamieszkaniaOsobyZawiadamiajacej": "Notifier address",
+      "informacjaOWypadku": "Accident information",
+      "daneSwiadkow": "Accident witnesses",
+      "zalaczniki": "Attachments",
+      "dokumentyPozniej": "Documents to be delivered later",
+      "oswiadczenie": "Declaration",
+      "sposobOdbioru": "Response collection method"
+    },
+    "preview_title": "Payload preview",
+    "fields": {
+      "imie": "First name",
+      "nazwisko": "Last name",
+      "pesel": "PESEL / ID number",
+      "numer_telefonu": "Phone number",
+      "dataUrodzenia": "Date of birth",
+      "miejsceUrodzenia": "Place of birth",
+      "dokumentRodzaj": "ID document type",
+      "dokumentSeriaNumer": "ID document number",
+      "ulica": "Street",
+      "numer_domu": "Building no.",
+      "numer_lokalu": "Flat no.",
+      "kod_pocztowy": "Postal code",
+      "miejscowosc": "City / town",
+      "nazwa_panstwa": "Country",
+      "sposob_korespondencji": "Correspondence method",
+      "jest_poszkodowanym": "Is the notifier the injured person?",
+      "data_wypadku": "Accident date",
+      "godzina_wypadku": "Accident time",
+      "miejsce_wypadku": "Accident location",
+      "planowana_godzina_rozpoczecia": "Scheduled work start time",
+      "planowana_godzina_zakonczenia": "Scheduled work end time",
+      "rodzaj_urazow": "Type of injuries",
+      "opis_okolicznosci": "Detailed description of circumstances, place and causes",
+      "pierwsza_pomoc": "First aid given?",
+      "placowka_medyczna": "Medical facility",
+      "organ_prowadzacy": "Investigating authority",
+      "maszyny_urzadzenia": "Accident during machine operation?",
+      "opis_stanu_maszyny": "Machine condition and usage description",
+      "atest": "Does machine have certificate?",
+      "ewidencja": "Is machine in fixed assets register?",
+      "swiadek": "Witness",
+      "karta_informacyjna": "Information card / First aid certificate",
+      "postanowienie_prokuratury": "Prosecutor's decision",
+      "dokumenty_zgon": "Death related documents",
+      "dokumenty_karta_wypadku": "Documents confirming right to accident card",
+      "inne_dokumenty": "Description of other documents",
+      "data_do": "Delivery date (until)",
+      "lista_dokumentow": "List of documents",
+      "data_zlozenia": "Submission date",
+      "podpis": "Signature"
+    },
+    "hints": {
+      "nazwa_panstwa": "Provide if address is other than Polish",
+      "nazwa_panstwa_twoj": "Provide if your address is other than Polish",
+      "numer_telefonu": "Providing this info will facilitate contact. Optional field.",
+      "adres_ostatniego_miejsca": "Provide last residence in Poland if currently abroad but lived in Poland before. If no residence address, provide stay address or last residence in Poland",
+      "adres_do_korespondencji": "If you choose: – poste restante, provide only postal code and city name of the facility, – PO Box, provide box number in Building no., facility postal code and city name.",
+      "adres_dzialalnosci": "Provide if injured person runs non-agricultural business or cooperates in one",
+      "adres_opieki": "Provide if injured person works as a nanny on activation contract",
+      "dane_osoby_zawiadamiajacej": "Fill if you are a different person than the injured",
+      "dokument_tozsamosci_brak_pesel": "Provide if you don't have a PESEL",
+      "adres_zamieszkania_zawiadamiajacej": "Fill if you are a different person than the injured",
+      "adres_ostatniego_miejsca_zawiadamiajacej": "Fill if you are different from injured. Provide last residence in Poland if currently abroad...",
+      "adres_do_korespondencji_zawiadamiajacej": "Fill if different person and correspondence address is different from residence/last residence/stay"
+    },
+    "options": {
+      "sposob_korespondencji": {
+        "placeholder": "Choose correspondence method...",
+        "adres": "address",
+        "poste_restante": "poste restante",
+        "skrytka_pocztowa": "PO Box",
+        "przegrodka_pocztowa": "postal pigeonhole"
+      }
+    },
+    "submit": "Submit report",
+    "success": "Form submitted successfully",
+    "error": "Submission error"
+  },
+  "voice": {
+    "title": "Voice Assistant",
+    "description": "Coming soon - report accident by talking to AI"
+  }
+}
