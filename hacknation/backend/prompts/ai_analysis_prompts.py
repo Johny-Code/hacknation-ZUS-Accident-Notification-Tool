@@ -73,10 +73,11 @@ Na podstawie analizy dwóch dokumentów (Zawiadomienia o wypadku i Wyjaśnień p
 3. Używaj dokładnych danych z dokumentów - nie wymyślaj informacji
 4. Formatuj daty w formacie DD.MM.YYYY
 5. Adresy zapisuj w pełnej formie
+6. Jeżeli płatnik nie jest oczywisty, jest nim osoba poszkodowana.
 
 # Sekcje Karty Wypadku
 
-**Sekcja I - Dane płatnika składek:**
+**Sekcja I - Dane płatnika składek:** (osoba poszkodowana prowadząca działalność gospodarczą)
 - Nazwa, adres, NIP, REGON płatnika
 
 **Sekcja II - Dane poszkodowanego:**
