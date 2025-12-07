@@ -16,7 +16,7 @@ from services.validation import (
     validate_wyjasnienia,
     SchemaType,
 )
-from services.check_if_report_valid import check_if_report_valid
+from services.check_if_report_valid import check_if_report_valid, check_if_wyjasnienia_valid
 from services.pdf_filler import generate_filled_pdf
 
 logger = logging.getLogger(__name__)
@@ -240,39 +240,57 @@ async def submit_wyjasnienia(form_data: WyjasnieniaPoszkodowanego):
 
     logger.info(f"Wyjaśnienia form saved to {json_filename}")
 
-    # Step 3: TODO - LLM Validation
-    # TODO: Implement LLM validation for 'Wyjaśnienia poszkodowanego' form
-    # Similar to check_if_report_valid() but adapted for this form type
-    # Example:
-    # validity_check = check_if_wyjasnienia_valid(form_dict)
-    # if not validity_check.valid:
-    #     return FormResponse(
-    #         success=False,
-    #         message=validity_check.comment,
-    #         data={
-    #             "valid": False,
-    #             "comment": validity_check.comment,
-    #             "fieldErrors": field_errors,
-    #             "json_filename": json_filename,
-    #             "txt_filename": None
-    #         }
-    #     )
+    # Step 3: LLM Validation for 'Wyjaśnienia poszkodowanego'
+    logger.info("Validating Wyjaśnienia form data with LLM")
+    validity_check = check_if_wyjasnienia_valid(form_dict)
+    
+    # Build field errors dict for frontend (only include fields that have warnings)
+    field_errors = {}
+    field_mapping_wyjasnienia = [
+        "dataWypadku",
+        "miejsceWypadku",
+        "godzinaWypadku",
+        "planowanaGodzinaRozpoczeciaPracy",
+        "planowanaGodzinaZakonczeniaPracy",
+        "rodzajCzynnosciPrzedWypadkiem",
+        "opisOkolicznosciWypadku",
+        "czyWStanieNietrzezwosci",
+    ]
+    
+    for field in field_mapping_wyjasnienia:
+        field_value = getattr(validity_check, field, None)
+        if field_value:
+            field_errors[field] = field_value
+    
+    # If LLM validation failed, return errors without generating PDF
+    if not validity_check.valid:
+        return FormResponse(
+            success=False,
+            message=validity_check.comment,
+            data={
+                "valid": False,
+                "comment": validity_check.comment,
+                "fieldErrors": field_errors,
+                "json_filename": json_filename,
+                "txt_filename": None
+            }
+        )
     
     # Step 4: Generate word / PDF file - musi być idealnie jak w ustawie
     # TODO: Implement PDF filling for Wyjaśnienia poszkodowanego
     
-    
-    # Step 5: Return success with PDF filename
-    # TODO: Implement return success with PDF filename
-    # return FormResponse(
-    #     success=True,
-    #     message="Formularz 'Wyjaśnienia poszkodowanego' został zweryfikowany pomyślnie. Plik PDF został wygenerowany.",
-    #     data={
-    #         "valid": True,
-    #         "json_filename": json_filename,
-    #         "pdf_filename": pdf_filename
-    #     }
-    # )
+    # Step 5: Return success (PDF generation not yet implemented)
+    return FormResponse(
+        success=True,
+        message="Formularz 'Wyjaśnienia poszkodowanego' został zweryfikowany pomyślnie. Generowanie PDF nie jest jeszcze zaimplementowane.",
+        data={
+            "valid": True,
+            "comment": validity_check.comment,
+            "fieldErrors": field_errors,
+            "json_filename": json_filename,
+            "pdf_filename": None  # TODO: Add when PDF generation is implemented
+        }
+    )
 
 
 @router.get("/form/download/{filename}")
