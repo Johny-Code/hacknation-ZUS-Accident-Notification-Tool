@@ -269,7 +269,7 @@ BOOLEAN_FIELD_MAPPING = {
 # DATE FORMAT CONFIGURATION
 # =============================================================================
 
-# PDF date fields have max length of 8 characters, so use DD-MM-YY format
-DATE_FORMAT_PDF = "%d-%m-%y"  # e.g., "06-12-25"
+# PDF date fields have max length of 8 characters, so use DDMMYYYY format
+DATE_FORMAT_PDF = "%d%m%Y"  # e.g., "06122025"
 DATE_FORMAT_INPUT = "%Y-%m-%d"  # ISO format from JSON schema
 

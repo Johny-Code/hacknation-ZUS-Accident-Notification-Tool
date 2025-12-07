@@ -61,7 +61,7 @@ def flatten_dict(data: dict, parent_key: str = "", sep: str = ".") -> dict:
 
 def format_date(date_str: str) -> str:
     """
-    Convert ISO date (YYYY-MM-DD) to PDF format (DD-MM-YY).
+    Convert ISO date (YYYY-MM-DD) to PDF format (DDMMYYYY).
     PDF fields have max 8 characters.
     """
     if not date_str:
