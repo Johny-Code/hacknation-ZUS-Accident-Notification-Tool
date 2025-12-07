@@ -32,7 +32,6 @@ UWAGA: Sprawdzany przez Ciebie formularz musi dotyczyć osoby prowadzącej dzia�
 
 Jeżeli wszystkie pola spełniają kryteria kompletności, to zwróć valid: True, a w innym przypadku False.
 """
- 
 
 
 verification_system_prompt_wyjasnienia="""# Rola
