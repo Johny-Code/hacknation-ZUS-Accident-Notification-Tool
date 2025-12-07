@@ -22,15 +22,35 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        - REACT_APP_API_URL=${REACT_APP_API_URL:-http://localhost:8000}
     container_name: accident-reporter-frontend
     ports:
       - "3000:3000"
     environment:
-      - REACT_APP_API_URL=http://localhost:8000
+      - REACT_APP_API_URL=${REACT_APP_API_URL:-http://localhost:8000}
       - CHOKIDAR_USEPOLLING=true
       - WATCHPACK_POLLING=true
     depends_on:
       - backend
     restart: unless-stopped
     stdin_open: true
+
+  # Cloudflare tunnel for backend API (no auth required!)
+  tunnel-backend:
+    image: cloudflare/cloudflared:latest
+    container_name: tunnel-backend
+    restart: unless-stopped
+    command: tunnel --no-autoupdate --url http://backend:8000
+    depends_on:
+      - backend
+
+  # Cloudflare tunnel for frontend (no auth required!)
+  tunnel-frontend:
+    image: cloudflare/cloudflared:latest
+    container_name: tunnel-frontend
+    restart: unless-stopped
+    command: tunnel --no-autoupdate --url http://frontend:3000
+    depends_on:
+      - frontend
 
