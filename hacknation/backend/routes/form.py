@@ -4,7 +4,7 @@ import shutil
 from datetime import datetime
 from pathlib import Path
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, UploadFile, File
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
@@ -469,6 +469,41 @@ async def download_pdf_from_incident_folder(incident_folder: str, filename: str)
     )
 
 
+@router.get("/form/download-from-folder/{folder}/{filename}")
+async def download_pdf_from_folder(folder: str, filename: str):
+    """
+    Download a PDF from any folder in PDFS_DIR (works for both incident and PESEL folders).
+    
+    Args:
+        folder: The folder name (e.g., "19900101_20231215_1" for incident or "12345678901_1" for PESEL)
+        filename: The PDF filename
+        
+    Returns:
+        The PDF file for download
+    """
+    # Security: only allow PDF files
+    if not filename.endswith(".pdf"):
+        raise HTTPException(status_code=400, detail="Invalid file type")
+    
+    # Prevent path traversal
+    if ".." in filename or "/" in filename or "\\" in filename:
+        raise HTTPException(status_code=400, detail="Invalid filename")
+    if ".." in folder or "/" in folder or "\\" in folder:
+        raise HTTPException(status_code=400, detail="Invalid folder name")
+    
+    filepath = PDFS_DIR / folder / filename
+    
+    if not filepath.exists():
+        raise HTTPException(status_code=404, detail="PDF not found")
+    
+    return FileResponse(
+        path=filepath,
+        filename=filename,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
+
+
 @router.get("/form/list")
 async def list_filled_forms():
     """
@@ -667,6 +702,51 @@ def get_incident_folder(data_urodzenia: str, data_wypadku: str) -> Path:
     return new_folder
 
 
+def get_pesel_folder(pesel: str) -> Path:
+    """
+    Get the appropriate folder for a given PESEL number.
+    
+    Logic:
+    - Look for existing folders named {PESEL}_N
+    - If no folder exists, create {PESEL}_1
+    - If the latest folder has less than 2 files, use it
+    - Otherwise, create a new folder with incremented N
+    
+    Args:
+        pesel: PESEL number (11 digits)
+        
+    Returns:
+        Path to the folder to use
+    """
+    folder_prefix = pesel
+    
+    # Find all existing folders for this PESEL
+    existing_folders = sorted(
+        [f for f in PDFS_DIR.iterdir() if f.is_dir() and f.name.startswith(f"{folder_prefix}_")],
+        key=lambda x: int(x.name.split("_")[-1]) if x.name.split("_")[-1].isdigit() else 0
+    )
+    
+    if not existing_folders:
+        # No folder exists, create the first one
+        new_folder = PDFS_DIR / f"{folder_prefix}_1"
+        new_folder.mkdir(parents=True, exist_ok=True)
+        return new_folder
+    
+    # Check the latest folder
+    latest_folder = existing_folders[-1]
+    files_in_folder = list(latest_folder.glob("*.pdf"))
+    
+    if len(files_in_folder) < 2:
+        # Use the existing folder
+        return latest_folder
+    
+    # Create a new folder with incremented number
+    latest_num = int(latest_folder.name.split("_")[-1])
+    new_folder = PDFS_DIR / f"{folder_prefix}_{latest_num + 1}"
+    new_folder.mkdir(parents=True, exist_ok=True)
+    return new_folder
+
+
 @router.post("/form/save-to-incident")
 async def save_pdf_to_incident_folder(request: SavePdfRequest):
     """
@@ -761,3 +841,61 @@ async def get_incident_folders(data_urodzenia: str, data_wypadku: str):
         "folders": folders,
         "total_folders": len(folders)
     }
+
+
+@router.post("/form/upload-pelnomocnictwo/{incident_folder}")
+async def upload_pelnomocnictwo(
+    incident_folder: str,
+    file: UploadFile = File(...)
+):
+    """
+    Upload pełnomocnictwo (power of attorney) document to the incident folder.
+    
+    Args:
+        incident_folder: The incident folder name (e.g., "19900101_20231215_1")
+        file: The uploaded PDF file
+        
+    Returns:
+        Information about the uploaded file
+    """
+    # Security: only allow PDF files
+    if not file.filename.lower().endswith(".pdf"):
+        raise HTTPException(
+            status_code=400, 
+            detail="Tylko pliki PDF są akceptowane. Proszę przesłać dokument w formacie PDF."
+        )
+    
+    # Prevent path traversal
+    if ".." in incident_folder or "/" in incident_folder or "\\" in incident_folder:
+        raise HTTPException(status_code=400, detail="Invalid folder name")
+    
+    target_folder = PDFS_DIR / incident_folder
+    
+    if not target_folder.exists():
+        raise HTTPException(status_code=404, detail="Folder wypadku nie istnieje")
+    
+    # Generate filename with timestamp
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    safe_filename = f"PELNOMOCNICTWO_{timestamp}.pdf"
+    target_path = target_folder / safe_filename
+    
+    # Save the uploaded file
+    try:
+        contents = await file.read()
+        with open(target_path, "wb") as f:
+            f.write(contents)
+        
+        logger.info(f"Pełnomocnictwo uploaded to: {target_path}")
+        
+        return {
+            "success": True,
+            "message": "Pełnomocnictwo zostało pomyślnie przesłane",
+            "filename": safe_filename,
+            "folder": incident_folder
+        }
+    except Exception as e:
+        logger.error(f"Failed to upload pełnomocnictwo: {e}")
+        raise HTTPException(
+            status_code=500, 
+            detail=f"Błąd podczas przesyłania pliku: {str(e)}"
+        )

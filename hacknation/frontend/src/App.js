@@ -103,11 +103,22 @@ function SkanPage({ t }) {
       if (response.ok && data.success) {
         // Successful validation - navigate to success-pdf page
         if (data.data?.valid && data.data?.pdf_filename) {
+          // Check if notifier is NOT the injured person (pełnomocnik) from OCR data
+          const ocrData = data.ocr_result;
+          const notifierData = ocrData?.daneOsobyKtoraZawiadamia;
+          const hasNotifierData = notifierData && (
+            notifierData.imie?.trim() || 
+            notifierData.nazwisko?.trim() || 
+            notifierData.pesel?.trim()
+          );
+          const isPelnomocnik = (notifierData && !notifierData.jestPoszkodowanym) || hasNotifierData;
+          
           navigate('/success-pdf', {
             state: {
               pdfFilename: data.data.pdf_filename,
               incidentFolderPath: data.data.incident_folder_path,
-              validationComment: data.data.comment
+              validationComment: data.data.comment,
+              isPelnomocnik: isPelnomocnik
             }
           });
         } else {
@@ -519,6 +530,7 @@ function FormPage({ t }) {
   const initialFormData = {
     daneOsobyPoszkodowanej: {
       pesel: '90010112345',
+      nip: '',
       dokumentTozsamosci: { rodzaj: 'Dowód osobisty', seriaINumer: 'ABC123456' },
       imie: 'Jan',
       nazwisko: 'Kowalski',
@@ -631,6 +643,7 @@ function FormPage({ t }) {
   const [validationErrors, setValidationErrors] = useState(null);
   const [fieldErrors, setFieldErrors] = useState({});
   const [activeWitnesses, setActiveWitnesses] = useState([true, false, false]);
+  const [showNipField, setShowNipField] = useState(false);
 
   // Show notification if data was prefilled from scan
   useEffect(() => {
@@ -757,12 +770,18 @@ function FormPage({ t }) {
         setValidationErrors(null);
         // Form is valid - navigate to success PDF page
         if (data.data.pdf_filename) {
+          // Check if notifier is NOT the injured person (pełnomocnik)
+          // Either: checkbox is unchecked OR notifier data is filled (imię, nazwisko)
+          const notifierData = formData.daneOsobyKtoraZawiadamia;
+          const hasNotifierData = notifierData.imie?.trim() || notifierData.nazwisko?.trim() || notifierData.pesel?.trim();
+          const isPelnomocnik = !notifierData.jestPoszkodowanym || hasNotifierData;
           navigate('/success-pdf', {
             state: {
               pdfFilename: data.data.pdf_filename,
               incidentFolderPath: data.data.incident_folder_path,
               peselFolderPath: data.data.pesel_folder_path,
-              validationComment: data.data.comment
+              validationComment: data.data.comment,
+              isPelnomocnik: isPelnomocnik
             }
           });
         }
@@ -845,6 +864,44 @@ function FormPage({ t }) {
             />
             {fieldErrors['daneOsobyPoszkodowanej.pesel'] && (
               <span className="field-error-text">{fieldErrors['daneOsobyPoszkodowanej.pesel']}</span>
+            )}
+          </div>
+
+          {/* NIP Field - optional toggle */}
+          <div className="form-group">
+            <div className="nip-toggle-container">
+              <button
+                type="button"
+                className={`nip-toggle-button ${showNipField ? 'active' : ''}`}
+                onClick={() => setShowNipField(!showNipField)}
+              >
+                {showNipField ? '➖' : '➕'} {showNipField ? 'Ukryj pole NIP' : 'Dodaj NIP (opcjonalnie)'}
+              </button>
+            </div>
+            
+            {showNipField && (
+              <>
+                <label className="form-label">NIP</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  value={formData.daneOsobyPoszkodowanej.nip || ''}
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/\D/g, '').slice(0, 10);
+                    updateField(['daneOsobyPoszkodowanej', 'nip'], value);
+                  }}
+                  maxLength="10"
+                  pattern="\d{10}"
+                  placeholder="Wprowadź 10-cyfrowy NIP"
+                />
+                <div className="nip-info-notice">
+                  <span className="nip-info-icon">ℹ️</span>
+                  <span className="nip-info-text">
+                    Z powodu ograniczeń biznes.gov.pl nie uzyskaliśmy klucza API do połączenia z chmurą CEIDG. 
+                    Pole NIP jest obecnie nieaktywne w zakresie weryfikacji danych.
+                  </span>
+                </div>
+              </>
             )}
           </div>
 
@@ -2404,10 +2461,20 @@ function PracownikPage({ t }) {
 function SuccessPdfPage({ t }) {
   const location = useLocation();
   const navigate = useNavigate();
-  const { pdfFilename, incidentFolderPath, peselFolderPath, validationComment } = location.state || {};
+  const { pdfFilename, incidentFolderPath, peselFolderPath, validationComment, isPelnomocnik } = location.state || {};
   
   // Use whichever folder path is available (incidentFolderPath for EWYP, peselFolderPath for Wyjaśnienia)
   const folderPath = incidentFolderPath || peselFolderPath;
+  
+  // State for pełnomocnictwo upload
+  const [pelnomocnictwoFile, setPelnomocnictwoFile] = useState(null);
+  const [uploadStatus, setUploadStatus] = useState(null);
+  const [isUploading, setIsUploading] = useState(false);
+
+  // Scroll to top when page loads
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }, []);
 
   // Redirect if no state provided at all
   useEffect(() => {
@@ -2415,6 +2482,56 @@ function SuccessPdfPage({ t }) {
       navigate('/form');
     }
   }, [location.state, navigate]);
+
+  // Handle pełnomocnictwo file selection
+  const handlePelnomocnictwoSelect = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (!file.name.toLowerCase().endsWith('.pdf')) {
+        setUploadStatus({ type: 'error', message: 'Proszę wybrać plik PDF' });
+        return;
+      }
+      setPelnomocnictwoFile(file);
+      setUploadStatus(null);
+    }
+  };
+
+  // Handle pełnomocnictwo upload
+  const handlePelnomocnictwoUpload = async () => {
+    if (!pelnomocnictwoFile || !folderPath) return;
+    
+    setIsUploading(true);
+    setUploadStatus({ type: 'loading', message: 'Przesyłanie pełnomocnictwa...' });
+    
+    try {
+      // Extract folder name from folderPath (e.g., "19900101_20231215_1/EWYP_xxx.pdf" -> "19900101_20231215_1")
+      const folderName = folderPath.split('/')[0];
+      
+      const formData = new FormData();
+      formData.append('file', pelnomocnictwoFile);
+      
+      const response = await fetch(`${API_URL}/form/upload-pelnomocnictwo/${folderName}`, {
+        method: 'POST',
+        body: formData
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok && data.success) {
+        setUploadStatus({ type: 'success', message: 'Pełnomocnictwo zostało pomyślnie przesłane!' });
+        setPelnomocnictwoFile(null);
+        // Clear the file input
+        const fileInput = document.getElementById('pelnomocnictwo-input');
+        if (fileInput) fileInput.value = '';
+      } else {
+        setUploadStatus({ type: 'error', message: data.detail || 'Błąd podczas przesyłania pliku' });
+      }
+    } catch (error) {
+      setUploadStatus({ type: 'error', message: 'Błąd połączenia z serwerem' });
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   if (!location.state) {
     return null;
@@ -2450,6 +2567,16 @@ function SuccessPdfPage({ t }) {
         </div>
       )}
 
+      {/* Pełnomocnik Warning - pokazywane gdy zgłaszający nie jest poszkodowanym */}
+      {isPelnomocnik && (
+        <div className="pelnomocnik-warning-banner">
+          <span className="pelnomocnik-warning-icon">⚠️</span>
+          <p className="pelnomocnik-warning-text">
+            Jeżeli zgłaszasz wypadek jako pełnomocnik poszkodowanego, prosimy o dołączenie pełnomocnictwa uprawniającego do działania w jego imieniu. Dokument ten jest wymagany, jeśli nie został wcześniej przekazany.
+          </p>
+        </div>
+      )}
+
       {/* PDF Preview Section - only show if PDF is available */}
       {pdfFilename && pdfViewUrl && (
         <div className="pdf-preview-section">
@@ -2461,6 +2588,53 @@ function SuccessPdfPage({ t }) {
               className="pdf-iframe"
             />
           </div>
+        </div>
+      )}
+
+      {/* Pełnomocnictwo Upload Section - pokazywane gdy zgłaszający jest pełnomocnikiem */}
+      {isPelnomocnik && folderPath && (
+        <div className="pelnomocnictwo-upload-section">
+          <h2 className="section-title">📎 Załącz pełnomocnictwo</h2>
+          <p className="upload-description">
+            Prześlij dokument pełnomocnictwa w formacie PDF. Plik zostanie zapisany wraz z dokumentami wypadku.
+          </p>
+          
+          <div className="upload-controls">
+            <label className="file-upload-label" htmlFor="pelnomocnictwo-input">
+              <input
+                id="pelnomocnictwo-input"
+                type="file"
+                accept=".pdf"
+                onChange={handlePelnomocnictwoSelect}
+                className="file-upload-input"
+              />
+              <span className="file-upload-button">
+                📄 Wybierz plik PDF
+              </span>
+            </label>
+            
+            {pelnomocnictwoFile && (
+              <div className="selected-file-info">
+                <span className="file-name">📎 {pelnomocnictwoFile.name}</span>
+                <button
+                  className="upload-submit-button"
+                  onClick={handlePelnomocnictwoUpload}
+                  disabled={isUploading}
+                >
+                  {isUploading ? '⏳ Przesyłanie...' : '⬆️ Prześlij pełnomocnictwo'}
+                </button>
+              </div>
+            )}
+          </div>
+          
+          {uploadStatus && (
+            <div className={`upload-status upload-status-${uploadStatus.type}`}>
+              {uploadStatus.type === 'loading' && <span className="spinner-inline"></span>}
+              {uploadStatus.type === 'success' && <span>✓</span>}
+              {uploadStatus.type === 'error' && <span>✕</span>}
+              <span>{uploadStatus.message}</span>
+            </div>
+          )}
         </div>
       )}
 
