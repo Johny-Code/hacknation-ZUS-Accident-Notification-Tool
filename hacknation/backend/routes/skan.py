@@ -11,7 +11,7 @@ from models import ScanResponse
 from config import get_user_upload_dir
 from services.ocr import process_pdf_ocr
 from services.validation import validate_data, validate_wyjasnienia, SchemaType
-from services.check_if_report_valid import check_if_report_valid
+from services.check_if_report_valid import check_if_report_valid, check_if_wyjasnienia_valid
 from services.pdf_filler import generate_filled_pdf
 from routes.form import get_pesel_folder
 
@@ -341,22 +341,67 @@ async def upload_scan(
         
         logger.info(f"Wyjaśnienia OCR data saved to {json_filename}")
         
-        # Step 3: LLM Validation
-        # TODO: Implement LLM validation for 'Wyjaśnienia poszkodowanego' form
-        # Similar to check_if_report_valid() but adapted for this form type
-        # Example:
-        # validity_check = check_if_wyjasnienia_valid(ocr_data)
-        # if not validity_check.valid:
-        #     return ScanResponse with validation errors
+        # Step 3: LLM Validation for 'Wyjaśnienia poszkodowanego'
+        logger.info("Starting LLM content validation for Wyjaśnienia")
+        field_errors = {}
+        validity_check = None
+        
+        validity_check = check_if_wyjasnienia_valid(ocr_data)
+        
+        # Build field errors dict for frontend (only include fields that have warnings)
+        field_mapping_wyjasnienia = [
+            "dataWypadku",
+            "miejsceWypadku",
+            "godzinaWypadku",
+            "planowanaGodzinaRozpoczeciaPracy",
+            "planowanaGodzinaZakonczeniaPracy",
+            "rodzajCzynnosciPrzedWypadkiem",
+            "opisOkolicznosciWypadku",
+            "czyWStanieNietrzezwosci",
+        ]
+        
+        for field in field_mapping_wyjasnienia:
+            field_value = getattr(validity_check, field, None)
+            if field_value:
+                field_errors[field] = field_value
+        
+        # If LLM validation failed, return with options (no PDF generation)
+        if not validity_check.valid:
+            logger.warning(f"LLM content validation failed for Wyjaśnienia: {validity_check.comment}")
+            
+            return ScanResponse(
+                success=False,
+                message=f"Walidacja merytoryczna nie przebiegła pomyślnie. {validity_check.comment}",
+                ocr_result=ocr_result_json,
+                data={
+                    "filename": file.filename,
+                    "file_id": file_id,
+                    "user_id": user_id,
+                    "size_bytes": file_size,
+                    "stored_path": str(file_path),
+                    "validationStage": "llm",
+                    "valid": False,
+                    "comment": validity_check.comment,
+                    "fieldErrors": field_errors,
+                    "json_filename": json_filename,
+                    "pdf_filename": None,
+                    "formData": ocr_data,
+                    "document_type": ocr_result["document_type"],
+                    "userOptions": [
+                        "reload_scan",  # Option 1: Upload scan again
+                        "fill_form"     # Option 2: Go to form with pre-filled data
+                    ]
+                }
+            )
         
         # Step 4: Generate TXT/PDF file
         # TODO: Implement TXT/PDF generation for 'Wyjaśnienia poszkodowanego'
         # This functionality is not yet implemented in form.py either
         
-        # Step 5: Success - return with current data (no PDF/TXT generation yet)
+        # Step 5: Success - LLM validation passed
         return ScanResponse(
             success=True,
-            message="Wstępna walidacja przebiegła pomyślnie, dane są poprawnie wypełnione. Dokument 'Wyjaśnienia poszkodowanego' został zapisany.",
+            message="Wstępna walidacja przebiegła pomyślnie, dane są poprawnie wypełnione. Walidacja merytoryczna zakończona sukcesem. Dokument 'Wyjaśnienia poszkodowanego' został zapisany.",
             ocr_result=ocr_result_json,
             data={
                 "filename": file.filename,
@@ -366,8 +411,8 @@ async def upload_scan(
                 "stored_path": str(file_path),
                 "validationStage": "completed",
                 "valid": True,
-                "comment": "Walidacja schematu przebiegła pomyślnie. Generowanie dokumentu wynikowego nie jest jeszcze zaimplementowane.",
-                "fieldErrors": {},
+                "comment": validity_check.comment if validity_check else "Wszystkie walidacje przebiegły pomyślnie",
+                "fieldErrors": field_errors,
                 "json_filename": json_filename,
                 "pdf_filename": None,  # TODO: Add when PDF/TXT generation is implemented
                 "document_type": ocr_result["document_type"],
