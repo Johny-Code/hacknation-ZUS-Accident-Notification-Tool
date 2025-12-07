@@ -6,6 +6,12 @@ import os
 
 from services.word_generator import generate_opinion_document
 from services.karta_wypadku_filler import generate_karta_wypadku_proposal
+from services.ai_analysis import (
+    check_document_consistency,
+    generate_opinion_data,
+    generate_karta_wypadku_data,
+    get_pdf_files_in_folder,
+)
 
 router = APIRouter(prefix="/pracownik", tags=["pracownik"])
 
@@ -118,35 +124,150 @@ async def view_pdf(folder_name: str, filename: str):
     )
 
 
-@router.post("/analiza-ai/{folder_name}")
-async def analyze_with_ai(folder_name: str):
+@router.post("/check-consistency/{folder_name}")
+async def check_consistency(folder_name: str):
     """
-    Trigger AI analysis for a PESEL folder.
-    Generates:
-    1. A Word document with legal opinion based on the folder contents
-    2. A flattened Karta Wypadku PDF proposal
+    Check consistency between two PDF documents in a PESEL folder.
+    
+    Returns:
+        - success: True if check completed
+        - is_consistent: True if documents are consistent
+        - inconsistencies: List of found inconsistencies
+        - summary: Summary for the user
+        - can_proceed: True if analysis can proceed (exactly 2 PDFs exist)
+        - already_analyzed: True if more than 2 files exist (analysis already done)
     """
     folder_path = PDFS_DIR / folder_name
     
     if not folder_path.exists():
         raise HTTPException(status_code=404, detail="Folder not found")
     
+    # Count PDF files
+    pdf_files = list(folder_path.glob("*.pdf"))
+    pdf_count = len(pdf_files)
+    
+    # Count generated files (DOCX or PDFs with specific names)
+    docx_count = len(list(folder_path.glob("*.docx")))
+    karta_count = len(list(folder_path.glob("Karta_Wypadku_*.pdf")))
+    
+    # Check if analysis was already performed
+    if docx_count > 0 or karta_count > 0:
+        return {
+            "success": True,
+            "can_proceed": False,
+            "already_analyzed": True,
+            "message": "Analiza AI została już przeprowadzona dla tego folderu. Znaleziono wygenerowane dokumenty.",
+            "pdf_count": pdf_count,
+            "generated_files_count": docx_count + karta_count
+        }
+    
+    # Check if we have exactly 2 PDFs
+    if pdf_count != 2:
+        return {
+            "success": True,
+            "can_proceed": False,
+            "already_analyzed": False,
+            "message": f"Wymagane są dokładnie 2 dokumenty PDF (zawiadomienie o wypadku i wyjaśnienia poszkodowanego). Obecnie w folderze jest {pdf_count} PDF(ów).",
+            "pdf_count": pdf_count
+        }
+    
+    try:
+        # Perform consistency check
+        result = check_document_consistency(folder_path)
+        
+        return {
+            "success": True,
+            "can_proceed": True,
+            "already_analyzed": False,
+            "is_consistent": result.is_consistent,
+            "inconsistencies": result.inconsistencies,
+            "summary": result.summary,
+            "pdf_count": pdf_count
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Błąd podczas sprawdzania spójności: {str(e)}")
+
+
+@router.post("/generate-documents/{folder_name}")
+async def generate_documents(folder_name: str):
+    """
+    Generate AI-powered documents for a PESEL folder:
+    1. Legal opinion document (Word)
+    2. Karta Wypadku proposal (PDF)
+    
+    This endpoint should be called after consistency check confirmation.
+    """
+    folder_path = PDFS_DIR / folder_name
+    
+    if not folder_path.exists():
+        raise HTTPException(status_code=404, detail="Folder not found")
+    
+    # Verify we have exactly 2 PDFs
+    pdf_files = list(folder_path.glob("*.pdf"))
+    if len(pdf_files) != 2:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Wymagane są dokładnie 2 dokumenty PDF. Obecnie: {len(pdf_files)}"
+        )
+    
     generated_files = []
     errors = []
     
-    # Generate the opinion document (Word)
-    opinion_result = generate_opinion_document(folder_path, folder_name)
-    if opinion_result["success"]:
-        generated_files.append(opinion_result["filename"])
-    else:
-        errors.append(f"Opinia prawna: {opinion_result.get('error', 'Nieznany błąd')}")
+    try:
+        # Generate opinion data using AI
+        opinion_data = generate_opinion_data(folder_path)
+        
+        # Convert Pydantic model to dict for word generator
+        opinion_context = {
+            "case_number": f"Znak sprawy: {opinion_data.case_number or folder_name}/2025",
+            "injured_person": opinion_data.injured_person,
+            "issue_description": opinion_data.issue_description,
+            "accident_date": opinion_data.accident_date,
+            "conclusion": opinion_data.conclusion,
+            "justification": opinion_data.justification,
+            "specialist_name": opinion_data.specialist_name or "Starszy Specjalista ZUS",
+            "specialist_signature_date": opinion_data.accident_date,
+            "approbant_opinion": opinion_data.approbant_opinion or "",
+            "approbant_date": "",
+            "approbant_signature": "",
+            "superapprobation_opinion": opinion_data.superapprobation_opinion or "",
+            "superapprobation_date": "",
+            "superapprobation_signature": "",
+            "consultant_opinion": "",
+            "consultant_date": "",
+            "consultant_signature": "",
+            "deputy_director_opinion": "",
+            "deputy_director_date": "",
+            "deputy_director_signature": "",
+            "final_decision": "",
+            "final_decision_date": "",
+            "final_decision_signature": ""
+        }
+        
+        # Generate opinion document
+        opinion_result = generate_opinion_document(folder_path, folder_name, opinion_context)
+        if opinion_result["success"]:
+            generated_files.append(opinion_result["filename"])
+        else:
+            errors.append(f"Opinia prawna: {opinion_result.get('error', 'Nieznany błąd')}")
+    except Exception as e:
+        errors.append(f"Opinia prawna: {str(e)}")
     
-    # Generate the Karta Wypadku proposal (PDF)
-    karta_result = generate_karta_wypadku_proposal(folder_path, folder_name)
-    if karta_result["success"]:
-        generated_files.append(karta_result["filename"])
-    else:
-        errors.append(f"Karta Wypadku: {karta_result.get('error', 'Nieznany błąd')}")
+    try:
+        # Generate Karta Wypadku data using AI
+        karta_data = generate_karta_wypadku_data(folder_path)
+        
+        # Convert Pydantic model to dict, excluding None values
+        karta_dict = {k: v for k, v in karta_data.model_dump().items() if v is not None}
+        
+        # Generate Karta Wypadku PDF
+        karta_result = generate_karta_wypadku_proposal(folder_path, folder_name, karta_dict)
+        if karta_result["success"]:
+            generated_files.append(karta_result["filename"])
+        else:
+            errors.append(f"Karta Wypadku: {karta_result.get('error', 'Nieznany błąd')}")
+    except Exception as e:
+        errors.append(f"Karta Wypadku: {str(e)}")
     
     if generated_files:
         message = f"Wygenerowano dokumenty: {', '.join(generated_files)}"
@@ -156,13 +277,29 @@ async def analyze_with_ai(folder_name: str):
             "success": True,
             "message": message,
             "folder": folder_name,
-            "generated_files": generated_files
+            "generated_files": generated_files,
+            "errors": errors if errors else None
         }
     else:
         raise HTTPException(
             status_code=500, 
             detail=f"Błąd generowania dokumentów: {'; '.join(errors)}"
         )
+
+
+@router.post("/analiza-ai/{folder_name}")
+async def analyze_with_ai(folder_name: str):
+    """
+    DEPRECATED: Use /check-consistency and /generate-documents instead.
+    
+    This endpoint is kept for backwards compatibility but now returns
+    a message directing to use the new two-step workflow.
+    """
+    return {
+        "success": False,
+        "message": "Ta funkcja została zaktualizowana. Użyj nowego przepływu: najpierw sprawdź spójność dokumentów (check-consistency), a następnie wygeneruj dokumenty (generate-documents).",
+        "use_new_workflow": True
+    }
 
 
 @router.get("/download/{folder_name}/{filename}")
@@ -192,4 +329,3 @@ async def download_file(folder_name: str, filename: str):
         filename=filename,
         media_type=media_type
     )
-

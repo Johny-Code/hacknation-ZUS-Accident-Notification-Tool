@@ -1,9 +1,8 @@
 """
 Word document generator service for creating legal opinion documents.
 
-# TODO: Replace hardcoded context in generate_opinion_document() with AI-generated content
-# The context dictionary should be populated by analyzing the PDF documents in the folder
-# using an LLM to extract relevant information and generate appropriate text.
+This module generates legal opinion documents (Word format) for ZUS accident cases.
+The context data should be provided by the AI analysis service.
 """
 
 from docx import Document
@@ -11,6 +10,7 @@ from docx.shared import Pt, Inches
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from pathlib import Path
 from datetime import datetime
+from typing import Optional, Dict, Any
 import uuid
 
 
@@ -207,50 +207,50 @@ def _add_opinion_section(doc, title: str, opinion: str, date: str, signature: st
     doc.add_paragraph()
 
 
-def generate_opinion_document(folder_path: Path, folder_name: str) -> dict:
+def generate_opinion_document(
+    folder_path: Path, 
+    folder_name: str,
+    context: Optional[Dict[str, Any]] = None
+) -> dict:
     """
     Generate an opinion document for a given PESEL folder.
-    
-    # TODO: Replace hardcoded context with AI-generated content
-    # This function should:
-    # 1. Read all PDF files in the folder
-    # 2. Extract text using OCR/pdf parsing
-    # 3. Send to LLM to analyze and extract relevant information
-    # 4. Generate appropriate opinion text based on the analysis
     
     Args:
         folder_path: Path to the PESEL folder containing PDF documents
         folder_name: Name of the folder (usually PESEL number)
+        context: Optional dictionary with data for the opinion. 
+                 If None, uses default placeholder data.
     
     Returns:
         Dictionary with success status and generated filename
     """
-    # Hardcoded example context - TODO: Replace with AI-generated content
-    context = {
-        "case_number": f"Znak sprawy: {folder_name}/2025",
-        "injured_person": "Jan Kowalski",
-        "issue_description": "Ocena czy zdarzenie spełnia definicję wypadku podczas wykonywania czynności związanych z prowadzeniem działalności gospodarczej.",
-        "accident_date": "28-02-2025",
-        "conclusion": "Proponuję uznać zdarzenie za wypadek podczas wykonywania czynności związanych z działalnością.",
-        "justification": "Na podstawie analizy dokumentacji zgromadzonej w sprawie, w szczególności protokołu powypadkowego, zeznań świadków oraz dokumentacji medycznej, stwierdzono, że zdarzenie z dnia 28-02-2025 r. spełnia definicję wypadku w rozumieniu przepisów ustawy o ubezpieczeniu społecznym z tytułu wypadków przy pracy i chorób zawodowych.",
-        "specialist_name": "Starszy Specjalista ZUS",
-        "specialist_signature_date": datetime.now().strftime("%d %B %Y").upper(),
-        "approbant_opinion": "Zgadzam się z opinią specjalisty. Dokumentacja jest kompletna.",
-        "approbant_date": datetime.now().strftime("%d %B %Y").upper(),
-        "approbant_signature": "Kierownik Wydziału",
-        "superapprobation_opinion": "Akceptuję proponowaną kwalifikację prawną zdarzenia.",
-        "superapprobation_date": datetime.now().strftime("%d %B %Y").upper(),
-        "superapprobation_signature": "Naczelnik Wydziału",
-        "consultant_opinion": "",
-        "consultant_date": "",
-        "consultant_signature": "",
-        "deputy_director_opinion": "",
-        "deputy_director_date": "",
-        "deputy_director_signature": "",
-        "final_decision": "",
-        "final_decision_date": "",
-        "final_decision_signature": ""
-    }
+    # Use provided context or fall back to default placeholder
+    if context is None:
+        context = {
+            "case_number": f"Znak sprawy: {folder_name}/2025",
+            "injured_person": "[Imię i nazwisko do uzupełnienia]",
+            "issue_description": "Ocena czy zdarzenie spełnia definicję wypadku podczas wykonywania czynności związanych z prowadzeniem działalności gospodarczej.",
+            "accident_date": datetime.now().strftime("%d-%m-%Y"),
+            "conclusion": "[Wniosek do uzupełnienia przez AI]",
+            "justification": "[Uzasadnienie do uzupełnienia przez AI]",
+            "specialist_name": "Starszy Specjalista ZUS",
+            "specialist_signature_date": datetime.now().strftime("%d %B %Y").upper(),
+            "approbant_opinion": "",
+            "approbant_date": "",
+            "approbant_signature": "",
+            "superapprobation_opinion": "",
+            "superapprobation_date": "",
+            "superapprobation_signature": "",
+            "consultant_opinion": "",
+            "consultant_date": "",
+            "consultant_signature": "",
+            "deputy_director_opinion": "",
+            "deputy_director_date": "",
+            "deputy_director_signature": "",
+            "final_decision": "",
+            "final_decision_date": "",
+            "final_decision_signature": ""
+        }
     
     # Generate unique filename
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -269,4 +269,3 @@ def generate_opinion_document(folder_path: Path, folder_name: str) -> dict:
             "success": False,
             "error": str(e)
         }
-
