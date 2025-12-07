@@ -15,7 +15,7 @@ from services.ai_analysis import (
 
 router = APIRouter(prefix="/pracownik", tags=["pracownik"])
 
-# Directory for PESEL-based PDF storage
+# Directory for incident-based PDF storage (birth date + accident date)
 PDFS_DIR = Path(__file__).parent.parent / "pdfs"
 PDFS_DIR.mkdir(exist_ok=True)
 
@@ -23,8 +23,8 @@ PDFS_DIR.mkdir(exist_ok=True)
 @router.get("/folders")
 async def list_folders():
     """
-    List all PESEL folders in the pdfs directory.
-    Returns a list of folder names (PESEL-based folders).
+    List all incident folders in the pdfs directory.
+    Returns a list of folder names (format: {dataUrodzenia}_{dataWypadku}_N).
     """
     try:
         folders = []
@@ -56,7 +56,7 @@ async def list_folders():
 @router.get("/folders/{folder_name}")
 async def list_folder_contents(folder_name: str):
     """
-    List contents of a specific PESEL folder.
+    List contents of a specific incident folder.
     Returns a list of PDF and DOCX files in the folder.
     """
     folder_path = PDFS_DIR / folder_name
@@ -97,7 +97,7 @@ async def list_folder_contents(folder_name: str):
 @router.get("/view/{folder_name}/{filename}")
 async def view_pdf(folder_name: str, filename: str):
     """
-    View a PDF file from a PESEL folder inline in the browser.
+    View a PDF file from an incident folder inline in the browser.
     """
     file_path = PDFS_DIR / folder_name / filename
     
@@ -127,7 +127,7 @@ async def view_pdf(folder_name: str, filename: str):
 @router.post("/check-consistency/{folder_name}")
 async def check_consistency(folder_name: str):
     """
-    Check consistency between two PDF documents in a PESEL folder.
+    Check consistency between two PDF documents in an incident folder.
     
     Returns:
         - success: True if check completed
@@ -191,7 +191,7 @@ async def check_consistency(folder_name: str):
 @router.post("/generate-documents/{folder_name}")
 async def generate_documents(folder_name: str):
     """
-    Generate AI-powered documents for a PESEL folder:
+    Generate AI-powered documents for an incident folder:
     1. Legal opinion document (Word)
     2. Karta Wypadku proposal (PDF)
     
@@ -305,7 +305,7 @@ async def analyze_with_ai(folder_name: str):
 @router.get("/download/{folder_name}/{filename}")
 async def download_file(folder_name: str, filename: str):
     """
-    Download a file (PDF or DOCX) from a PESEL folder.
+    Download a file (PDF or DOCX) from an incident folder.
     """
     file_path = PDFS_DIR / folder_name / filename
     

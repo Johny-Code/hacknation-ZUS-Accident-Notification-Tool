@@ -106,7 +106,7 @@ function SkanPage({ t }) {
           navigate('/success-pdf', {
             state: {
               pdfFilename: data.data.pdf_filename,
-              peselFolderPath: data.data.pesel_folder_path,
+              incidentFolderPath: data.data.incident_folder_path,
               validationComment: data.data.comment
             }
           });
@@ -758,7 +758,7 @@ function FormPage({ t }) {
           navigate('/success-pdf', {
             state: {
               pdfFilename: data.data.pdf_filename,
-              peselFolderPath: data.data.pesel_folder_path,
+              incidentFolderPath: data.data.incident_folder_path,
               validationComment: data.data.comment
             }
           });
@@ -1457,7 +1457,7 @@ function WyjasnieniaPoszkodowanegoFormPage({ t }) {
           navigate('/success-pdf', {
             state: {
               pdfFilename: data.data.pdf_filename,
-              peselFolderPath: data.data.pesel_folder_path,
+              incidentFolderPath: data.data.incident_folder_path,
               validationComment: data.data.comment
             }
           });
@@ -2353,11 +2353,11 @@ function PracownikPage({ t }) {
   );
 }
 
-// Success Page with PDF Preview (PDF is automatically saved to PESEL folder on backend)
+// Success Page with PDF Preview (PDF is automatically saved to incident folder on backend)
 function SuccessPdfPage({ t }) {
   const location = useLocation();
   const navigate = useNavigate();
-  const { pdfFilename, peselFolderPath, validationComment } = location.state || {};
+  const { pdfFilename, incidentFolderPath, validationComment } = location.state || {};
 
   // Redirect if no PDF filename provided
   useEffect(() => {
@@ -2370,13 +2370,13 @@ function SuccessPdfPage({ t }) {
     return null;
   }
 
-  // Use the PESEL folder path if available, otherwise fall back to filled_forms
-  const pdfViewUrl = peselFolderPath 
-    ? `${API_URL}/form/view/${peselFolderPath}`
+  // Use the incident folder path if available, otherwise fall back to filled_forms
+  const pdfViewUrl = incidentFolderPath 
+    ? `${API_URL}/form/view/${incidentFolderPath}`
     : `${API_URL}/form/view-filled/${pdfFilename}`;
   
-  const pdfDownloadUrl = peselFolderPath
-    ? `${API_URL}/form/download-from-pesel/${peselFolderPath}`
+  const pdfDownloadUrl = incidentFolderPath
+    ? `${API_URL}/form/download-from-incident/${incidentFolderPath}`
     : `${API_URL}/form/download/${pdfFilename}`;
 
   return (

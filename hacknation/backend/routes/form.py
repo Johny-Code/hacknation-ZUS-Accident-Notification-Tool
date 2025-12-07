@@ -33,8 +33,9 @@ PDFS_DIR.mkdir(exist_ok=True)
 
 
 class SavePdfRequest(BaseModel):
-    """Request to save a PDF to the PESEL-based folder structure."""
-    pesel: str
+    """Request to save a PDF to the incident-based folder structure."""
+    data_urodzenia: str  # Birth date in YYYY-MM-DD format
+    data_wypadku: str    # Accident date in YYYY-MM-DD format
     pdf_filename: str
 
 
@@ -149,19 +150,20 @@ async def submit_zawiadomienie(form_data: ZawiadomienieOWypadku):
             }
         )
 
-    # Step 5: Automatically save PDF to PESEL folder
-    pesel = form_dict.get("daneOsobyPoszkodowanej", {}).get("pesel", "")
-    pesel_folder_path = None
+    # Step 5: Automatically save PDF to incident folder (based on dataUrodzenia + dataWypadku)
+    data_urodzenia = form_dict.get("daneOsobyPoszkodowanej", {}).get("dataUrodzenia", "")
+    data_wypadku = form_dict.get("informacjaOWypadku", {}).get("dataWypadku", "")
+    incident_folder_path = None
     
-    if pesel and len(pesel) == 11 and pesel.isdigit():
+    if data_urodzenia and data_wypadku:
         try:
-            target_folder = get_pesel_folder(pesel)
+            target_folder = get_incident_folder(data_urodzenia, data_wypadku)
             target_path = target_folder / pdf_filename
             shutil.copy2(pdf_path, target_path)
-            pesel_folder_path = f"{target_folder.name}/{pdf_filename}"
-            logger.info(f"PDF automatically saved to PESEL folder: {target_path}")
+            incident_folder_path = f"{target_folder.name}/{pdf_filename}"
+            logger.info(f"PDF automatically saved to incident folder: {target_path}")
         except Exception as e:
-            logger.error(f"Failed to save PDF to PESEL folder: {e}")
+            logger.error(f"Failed to save PDF to incident folder: {e}")
             # Continue anyway - the PDF is still in filled_forms
     
     # Step 6: All done - return success
@@ -174,7 +176,7 @@ async def submit_zawiadomienie(form_data: ZawiadomienieOWypadku):
             "fieldErrors": field_errors,
             "json_filename": json_filename,
             "pdf_filename": pdf_filename,
-            "pesel_folder_path": pesel_folder_path
+            "incident_folder_path": incident_folder_path
         }
     )
 
@@ -329,7 +331,7 @@ async def download_filled_pdf(filename: str):
 async def view_filled_pdf(filename: str):
     """
     View a PDF from filled_forms folder (inline display, no download).
-    Fallback for when PESEL folder path is not available.
+    Fallback for when incident folder path is not available.
     
     Args:
         filename: The PDF filename
@@ -360,13 +362,13 @@ async def view_filled_pdf(filename: str):
     )
 
 
-@router.get("/form/view/{pesel_folder}/{filename}")
-async def view_pdf_from_pesel_folder(pesel_folder: str, filename: str):
+@router.get("/form/view/{incident_folder}/{filename}")
+async def view_pdf_from_incident_folder(incident_folder: str, filename: str):
     """
-    View a PDF from the PESEL folder (inline display, no download).
+    View a PDF from the incident folder (inline display, no download).
     
     Args:
-        pesel_folder: The PESEL folder name (e.g., "90010112345_1")
+        incident_folder: The incident folder name (e.g., "19900101_20231215_1" for birth date 1990-01-01, accident date 2023-12-15)
         filename: The PDF filename
         
     Returns:
@@ -379,10 +381,10 @@ async def view_pdf_from_pesel_folder(pesel_folder: str, filename: str):
     # Prevent path traversal
     if ".." in filename or "/" in filename or "\\" in filename:
         raise HTTPException(status_code=400, detail="Invalid filename")
-    if ".." in pesel_folder or "/" in pesel_folder or "\\" in pesel_folder:
+    if ".." in incident_folder or "/" in incident_folder or "\\" in incident_folder:
         raise HTTPException(status_code=400, detail="Invalid folder name")
     
-    filepath = PDFS_DIR / pesel_folder / filename
+    filepath = PDFS_DIR / incident_folder / filename
     
     if not filepath.exists():
         raise HTTPException(status_code=404, detail="PDF not found")
@@ -398,13 +400,13 @@ async def view_pdf_from_pesel_folder(pesel_folder: str, filename: str):
     )
 
 
-@router.get("/form/download-from-pesel/{pesel_folder}/{filename}")
-async def download_pdf_from_pesel_folder(pesel_folder: str, filename: str):
+@router.get("/form/download-from-incident/{incident_folder}/{filename}")
+async def download_pdf_from_incident_folder(incident_folder: str, filename: str):
     """
-    Download a PDF from the PESEL folder.
+    Download a PDF from the incident folder.
     
     Args:
-        pesel_folder: The PESEL folder name (e.g., "90010112345_1")
+        incident_folder: The incident folder name (e.g., "19900101_20231215_1" for birth date 1990-01-01, accident date 2023-12-15)
         filename: The PDF filename
         
     Returns:
@@ -417,10 +419,10 @@ async def download_pdf_from_pesel_folder(pesel_folder: str, filename: str):
     # Prevent path traversal
     if ".." in filename or "/" in filename or "\\" in filename:
         raise HTTPException(status_code=400, detail="Invalid filename")
-    if ".." in pesel_folder or "/" in pesel_folder or "\\" in pesel_folder:
+    if ".." in incident_folder or "/" in incident_folder or "\\" in incident_folder:
         raise HTTPException(status_code=400, detail="Invalid folder name")
     
-    filepath = PDFS_DIR / pesel_folder / filename
+    filepath = PDFS_DIR / incident_folder / filename
     
     if not filepath.exists():
         raise HTTPException(status_code=404, detail="PDF not found")
@@ -567,31 +569,52 @@ async def list_wyjasnienia_forms():
     return {"files": txt_files, "count": len(txt_files)}
 
 
-def get_pesel_folder(pesel: str) -> Path:
+def format_date_for_folder(date_str: str) -> str:
     """
-    Get the appropriate folder for a given PESEL.
+    Format a date string for folder naming.
+    Converts YYYY-MM-DD to YYYYMMDD format.
+    
+    Args:
+        date_str: Date in YYYY-MM-DD format
+        
+    Returns:
+        Date in YYYYMMDD format
+    """
+    # Remove dashes if present
+    return date_str.replace("-", "")
+
+
+def get_incident_folder(data_urodzenia: str, data_wypadku: str) -> Path:
+    """
+    Get the appropriate folder for a given birth date and accident date combination.
     
     Logic:
-    - Look for existing folders named {PESEL}_N
-    - If no folder exists, create {PESEL}_1
+    - Look for existing folders named {dataUrodzenia}_{dataWypadku}_N
+    - If no folder exists, create {dataUrodzenia}_{dataWypadku}_1
     - If the latest folder has less than 2 files, use it
     - Otherwise, create a new folder with incremented N
     
     Args:
-        pesel: The PESEL number
+        data_urodzenia: Birth date (YYYY-MM-DD or YYYYMMDD format)
+        data_wypadku: Accident date (YYYY-MM-DD or YYYYMMDD format)
         
     Returns:
         Path to the folder to use
     """
-    # Find all existing folders for this PESEL
+    # Format dates for folder naming (YYYYMMDD_YYYYMMDD)
+    urodzenia_formatted = format_date_for_folder(data_urodzenia)
+    wypadku_formatted = format_date_for_folder(data_wypadku)
+    folder_prefix = f"{urodzenia_formatted}_{wypadku_formatted}"
+    
+    # Find all existing folders for this combination
     existing_folders = sorted(
-        [f for f in PDFS_DIR.iterdir() if f.is_dir() and f.name.startswith(f"{pesel}_")],
+        [f for f in PDFS_DIR.iterdir() if f.is_dir() and f.name.startswith(f"{folder_prefix}_")],
         key=lambda x: int(x.name.split("_")[-1]) if x.name.split("_")[-1].isdigit() else 0
     )
     
     if not existing_folders:
         # No folder exists, create the first one
-        new_folder = PDFS_DIR / f"{pesel}_1"
+        new_folder = PDFS_DIR / f"{folder_prefix}_1"
         new_folder.mkdir(parents=True, exist_ok=True)
         return new_folder
     
@@ -605,28 +628,35 @@ def get_pesel_folder(pesel: str) -> Path:
     
     # Create a new folder with incremented number
     latest_num = int(latest_folder.name.split("_")[-1])
-    new_folder = PDFS_DIR / f"{pesel}_{latest_num + 1}"
+    new_folder = PDFS_DIR / f"{folder_prefix}_{latest_num + 1}"
     new_folder.mkdir(parents=True, exist_ok=True)
     return new_folder
 
 
-@router.post("/form/save-to-pesel")
-async def save_pdf_to_pesel_folder(request: SavePdfRequest):
+@router.post("/form/save-to-incident")
+async def save_pdf_to_incident_folder(request: SavePdfRequest):
     """
-    Save a generated PDF to the PESEL-based folder structure.
+    Save a generated PDF to the incident-based folder structure.
     
-    The folder structure is: pdfs/{PESEL}_N/
+    The folder structure is: pdfs/{dataUrodzenia}_{dataWypadku}_N/
     where N starts at 1 and increments when a folder has 2 files.
+    Dates are stored in YYYYMMDD format.
     
     Args:
-        request: Contains pesel and pdf_filename
+        request: Contains data_urodzenia, data_wypadku and pdf_filename
         
     Returns:
         Information about where the PDF was saved
     """
-    # Validate PESEL format (basic check - 11 digits)
-    if not request.pesel or len(request.pesel) != 11 or not request.pesel.isdigit():
-        raise HTTPException(status_code=400, detail="Invalid PESEL format - must be 11 digits")
+    # Validate date formats (basic check - YYYY-MM-DD format)
+    import re
+    date_pattern = r'^\d{4}-\d{2}-\d{2}$'
+    
+    if not request.data_urodzenia or not re.match(date_pattern, request.data_urodzenia):
+        raise HTTPException(status_code=400, detail="Invalid data_urodzenia format - must be YYYY-MM-DD")
+    
+    if not request.data_wypadku or not re.match(date_pattern, request.data_wypadku):
+        raise HTTPException(status_code=400, detail="Invalid data_wypadku format - must be YYYY-MM-DD")
     
     # Find the source PDF
     source_pdf = FILLED_FORMS_DIR / request.pdf_filename
@@ -634,20 +664,20 @@ async def save_pdf_to_pesel_folder(request: SavePdfRequest):
         raise HTTPException(status_code=404, detail=f"PDF not found: {request.pdf_filename}")
     
     # Get the appropriate folder
-    target_folder = get_pesel_folder(request.pesel)
+    target_folder = get_incident_folder(request.data_urodzenia, request.data_wypadku)
     
     # Copy the PDF to the target folder
     target_path = target_folder / request.pdf_filename
     shutil.copy2(source_pdf, target_path)
     
-    logger.info(f"PDF saved to PESEL folder: {target_path}")
+    logger.info(f"PDF saved to incident folder: {target_path}")
     
     # Count files in the folder
     files_in_folder = list(target_folder.glob("*.pdf"))
     
     return {
         "success": True,
-        "message": "PDF został zapisany w folderze osoby poszkodowanej",
+        "message": "PDF został zapisany w folderze wypadku",
         "folder": target_folder.name,
         "folder_path": str(target_folder.relative_to(PDFS_DIR.parent)),
         "files_in_folder": len(files_in_folder),
@@ -655,23 +685,35 @@ async def save_pdf_to_pesel_folder(request: SavePdfRequest):
     }
 
 
-@router.get("/form/pesel-folders/{pesel}")
-async def get_pesel_folders(pesel: str):
+@router.get("/form/incident-folders/{data_urodzenia}/{data_wypadku}")
+async def get_incident_folders(data_urodzenia: str, data_wypadku: str):
     """
-    Get all folders and files for a given PESEL.
+    Get all folders and files for a given birth date and accident date combination.
     
     Args:
-        pesel: The PESEL number
+        data_urodzenia: Birth date in YYYY-MM-DD or YYYYMMDD format
+        data_wypadku: Accident date in YYYY-MM-DD or YYYYMMDD format
         
     Returns:
-        List of folders and their contents for this PESEL
+        List of folders and their contents for this combination
     """
-    if not pesel or len(pesel) != 11 or not pesel.isdigit():
-        raise HTTPException(status_code=400, detail="Invalid PESEL format")
+    import re
+    date_pattern = r'^(\d{4}-\d{2}-\d{2}|\d{8})$'
+    
+    if not data_urodzenia or not re.match(date_pattern, data_urodzenia):
+        raise HTTPException(status_code=400, detail="Invalid data_urodzenia format")
+    
+    if not data_wypadku or not re.match(date_pattern, data_wypadku):
+        raise HTTPException(status_code=400, detail="Invalid data_wypadku format")
+    
+    # Format dates for folder prefix lookup
+    urodzenia_formatted = format_date_for_folder(data_urodzenia)
+    wypadku_formatted = format_date_for_folder(data_wypadku)
+    folder_prefix = f"{urodzenia_formatted}_{wypadku_formatted}"
     
     folders = []
     for folder in sorted(PDFS_DIR.iterdir()):
-        if folder.is_dir() and folder.name.startswith(f"{pesel}_"):
+        if folder.is_dir() and folder.name.startswith(f"{folder_prefix}_"):
             files = sorted([f.name for f in folder.glob("*.pdf")])
             folders.append({
                 "folder_name": folder.name,
@@ -680,7 +722,8 @@ async def get_pesel_folders(pesel: str):
             })
     
     return {
-        "pesel": pesel,
+        "data_urodzenia": data_urodzenia,
+        "data_wypadku": data_wypadku,
         "folders": folders,
         "total_folders": len(folders)
     }

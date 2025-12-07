@@ -328,15 +328,16 @@ def generate_karta_wypadku_data(folder_path: Path) -> KartaWypadkuData:
         all_images.extend(images)
     
     # Build content for LLM
-    folder_name = folder_path.name  # PESEL number
+    folder_name = folder_path.name  # Format: {dataUrodzenia}_{dataWypadku}_N
     today = datetime.now().strftime("%d.%m.%Y")
     
     content = [
         {
             "type": "input_text",
             "text": f"{KARTA_WYPADKU_GENERATION_PROMPT}\n\n"
-                   f"PESEL poszkodowanego (z nazwy folderu): {folder_name}\n"
+                   f"Nazwa folderu incydentu: {folder_name}\n"
                    f"Data dzisiejsza: {today}\n\n"
+                   f"PESEL poszkodowanego powinien zostać wyodrębniony z dokumentów źródłowych.\n"
                    f"Poniżej znajdują się obrazy dokumentów źródłowych:",
         }
     ]

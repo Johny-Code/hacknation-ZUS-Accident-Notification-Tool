@@ -207,11 +207,11 @@ def generate_karta_wypadku_proposal(
     data: Optional[Dict[str, Any]] = None
 ) -> Dict[str, Any]:
     """
-    Generate a Karta Wypadku proposal PDF for a given PESEL folder.
+    Generate a Karta Wypadku proposal PDF for a given incident folder.
 
     Args:
-        folder_path: Path to the PESEL folder
-        folder_name: Name of the folder (usually PESEL number)
+        folder_path: Path to the incident folder
+        folder_name: Name of the folder (format: {dataUrodzenia}_{dataWypadku}_N)
         data: Dictionary with data to fill from AI analysis.
               If None, uses minimal placeholder data.
 
@@ -223,16 +223,11 @@ def generate_karta_wypadku_proposal(
     if data is None:
         logger.warning("No AI-generated data provided, using minimal placeholders")
         data = {
-            # Only set PESEL from folder name, rest should come from AI
-            "VICTIMPESEL": folder_name,
+            # VICTIMPESEL should come from document content via AI, not from folder name
             "CARDDATE": datetime.now().strftime("%d.%m.%Y"),
             "RECEIVEDDATE": datetime.now().strftime("%d.%m.%Y"),
         }
     else:
-        # Ensure VICTIMPESEL is set from folder name if not provided
-        if "VICTIMPESEL" not in data or not data.get("VICTIMPESEL"):
-            data["VICTIMPESEL"] = folder_name
-        
         # Add default dates if not provided
         today = datetime.now().strftime("%d.%m.%Y")
         if "CARDDATE" not in data or not data.get("CARDDATE"):

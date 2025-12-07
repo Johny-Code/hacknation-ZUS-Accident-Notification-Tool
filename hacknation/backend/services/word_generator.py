@@ -213,11 +213,11 @@ def generate_opinion_document(
     context: Optional[Dict[str, Any]] = None
 ) -> dict:
     """
-    Generate an opinion document for a given PESEL folder.
+    Generate an opinion document for a given incident folder.
     
     Args:
-        folder_path: Path to the PESEL folder containing PDF documents
-        folder_name: Name of the folder (usually PESEL number)
+        folder_path: Path to the incident folder containing PDF documents
+        folder_name: Name of the folder (format: {dataUrodzenia}_{dataWypadku}_N)
         context: Optional dictionary with data for the opinion. 
                  If None, uses default placeholder data.
     
