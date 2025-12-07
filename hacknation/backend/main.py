@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 
-from routes import skan_router, form_router, voice_router
+from routes import skan_router, form_router, voice_router, pracownik_router
 
 app = FastAPI(
     title="Work Accident Reporter API",
@@ -23,6 +23,7 @@ app.add_middleware(
 app.include_router(skan_router)
 app.include_router(form_router)
 app.include_router(voice_router)
+app.include_router(pracownik_router)
 
 
 @app.get("/")

@@ -48,6 +48,11 @@ function HomePage({ t }) {
           <span className="nav-button-icon">🎤</span>
           <span className="nav-button-text">{t('navigation.voicechat')}</span>
         </Link>
+        
+        <Link to="/pracownik" className="nav-button">
+          <span className="nav-button-icon">👔</span>
+          <span className="nav-button-text">{t('navigation.pracownik')}</span>
+        </Link>
       </div>
     </div>
   );
@@ -1978,6 +1983,245 @@ function VoicePage({ t }) {
   );
 }
 
+// Pracownik Page - ZUS Employee Portal
+function PracownikPage({ t }) {
+  const [folders, setFolders] = useState([]);
+  const [currentFolder, setCurrentFolder] = useState(null);
+  const [files, setFiles] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedPdf, setSelectedPdf] = useState(null);
+  const [aiResult, setAiResult] = useState(null);
+  const [analyzing, setAnalyzing] = useState(false);
+
+  // Fetch folders on mount
+  useEffect(() => {
+    fetchFolders();
+  }, []);
+
+  const fetchFolders = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch(`${API_URL}/pracownik/folders`);
+      const data = await response.json();
+      if (data.success) {
+        setFolders(data.items);
+      }
+    } catch (error) {
+      console.error('Error fetching folders:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const openFolder = async (folderName) => {
+    setLoading(true);
+    setSelectedPdf(null);
+    setAiResult(null);
+    try {
+      const response = await fetch(`${API_URL}/pracownik/folders/${folderName}`);
+      const data = await response.json();
+      if (data.success) {
+        setCurrentFolder(folderName);
+        setFiles(data.items);
+      }
+    } catch (error) {
+      console.error('Error fetching folder contents:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const goBack = () => {
+    setCurrentFolder(null);
+    setFiles([]);
+    setSelectedPdf(null);
+    setAiResult(null);
+  };
+
+  const viewPdf = (filename) => {
+    setSelectedPdf(filename);
+  };
+
+  const closePdfPreview = () => {
+    setSelectedPdf(null);
+  };
+
+  const analyzeWithAI = async () => {
+    if (!currentFolder) return;
+    
+    setAnalyzing(true);
+    setAiResult(null);
+    try {
+      const response = await fetch(`${API_URL}/pracownik/analiza-ai/${currentFolder}`, {
+        method: 'POST'
+      });
+      const data = await response.json();
+      setAiResult(data);
+      
+      // Refresh file list after successful AI analysis to show the new generated file
+      if (data.success) {
+        const folderResponse = await fetch(`${API_URL}/pracownik/folders/${currentFolder}`);
+        const folderData = await folderResponse.json();
+        if (folderData.success) {
+          setFiles(folderData.items);
+        }
+      }
+    } catch (error) {
+      console.error('Error analyzing with AI:', error);
+      setAiResult({ success: false, message: 'Błąd połączenia z backendem' });
+    } finally {
+      setAnalyzing(false);
+    }
+  };
+
+  const formatFileSize = (bytes) => {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  };
+
+  if (loading) {
+    return (
+      <div className="page-container">
+        <h1 className="page-title">{t('pracownik.title')}</h1>
+        <div className="loading-spinner">
+          <div className="spinner"></div>
+          <p>{t('pracownik.loading')}</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="page-container">
+      <h1 className="page-title">{t('pracownik.title')}</h1>
+      <p className="page-description">{t('pracownik.description')}</p>
+
+      {/* PDF Preview Modal */}
+      {selectedPdf && currentFolder && (
+        <div className="pdf-modal-overlay" onClick={closePdfPreview}>
+          <div className="pdf-modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="pdf-modal-header">
+              <h3>{selectedPdf}</h3>
+              <button className="pdf-modal-close" onClick={closePdfPreview}>✕</button>
+            </div>
+            <div className="pdf-modal-body">
+              <iframe
+                src={`${API_URL}/pracownik/view/${currentFolder}/${selectedPdf}#toolbar=1`}
+                title="PDF Preview"
+                className="pdf-modal-iframe"
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Folder view or file view */}
+      {!currentFolder ? (
+        // Folder list view
+        <div className="folder-browser">
+          <h2 className="section-title">{t('pracownik.folders_title')}</h2>
+          
+          {folders.length === 0 ? (
+            <div className="empty-state">
+              <div className="empty-state-icon">📁</div>
+              <p>{t('pracownik.empty_folders')}</p>
+            </div>
+          ) : (
+            <div className="folder-grid">
+              {folders.map((folder) => (
+                <div 
+                  key={folder.name} 
+                  className="folder-card"
+                  onClick={() => openFolder(folder.name)}
+                >
+                  <div className="folder-icon">📁</div>
+                  <div className="folder-info">
+                    <span className="folder-name">{folder.name}</span>
+                    <span className="folder-meta">{folder.pdf_count} {t('pracownik.pdf_count')}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      ) : (
+        // File list view
+        <div className="folder-browser">
+          <div className="folder-header">
+            <button className="back-button" onClick={goBack}>
+              ← {t('pracownik.back_to_folders')}
+            </button>
+            <h2 className="section-title">📁 {currentFolder}</h2>
+            <button 
+              className="ai-analyze-button"
+              onClick={analyzeWithAI}
+              disabled={analyzing}
+            >
+              {analyzing ? (
+                <>
+                  <span className="spinner-small"></span>
+                  {t('pracownik.analyzing')}
+                </>
+              ) : (
+                <>🤖 {t('pracownik.analyze_ai')}</>
+              )}
+            </button>
+          </div>
+
+          {/* AI Analysis Result */}
+          {aiResult && (
+            <div className={`ai-result ${aiResult.success ? 'ai-result-success' : 'ai-result-error'}`}>
+              <span className="ai-result-icon">{aiResult.success ? '✅' : '❌'}</span>
+              <span className="ai-result-message">{aiResult.message}</span>
+            </div>
+          )}
+
+          {files.length === 0 ? (
+            <div className="empty-state">
+              <div className="empty-state-icon">📄</div>
+              <p>{t('pracownik.empty_folder')}</p>
+            </div>
+          ) : (
+            <div className="file-list">
+              {files.map((file) => {
+                const isDocx = file.file_type === 'docx' || file.name.endsWith('.docx');
+                return (
+                  <div 
+                    key={file.name} 
+                    className="file-card"
+                    onClick={() => !isDocx && viewPdf(file.name)}
+                  >
+                    <div className="file-icon">{isDocx ? '📝' : '📄'}</div>
+                    <div className="file-info">
+                      <span className="file-name">{file.name}</span>
+                      <span className="file-meta">{formatFileSize(file.size_bytes)}</span>
+                    </div>
+                    {isDocx ? (
+                      <a 
+                        href={`${API_URL}/pracownik/download/${currentFolder}/${file.name}`}
+                        className="file-download-button"
+                        download={file.name}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        ⬇️ {t('pracownik.download_file')}
+                      </a>
+                    ) : (
+                      <button className="file-view-button">
+                        👁️ {t('pracownik.pdf_preview')}
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // Success Page with PDF Preview (PDF is automatically saved to PESEL folder on backend)
 function SuccessPdfPage({ t }) {
   const location = useLocation();
@@ -2167,6 +2411,7 @@ function App() {
         <Route path="/form/ewyp" element={<FormPage t={t} />} />
         <Route path="/form/wyjasnienia" element={<WyjasnieniaPoszkodowanegoFormPage t={t} />} />
         <Route path="/voice" element={<VoicePage t={t} />} />
+        <Route path="/pracownik" element={<PracownikPage t={t} />} />
         <Route path="/success" element={<SuccessPage t={t} />} />
         <Route path="/success-pdf" element={<SuccessPdfPage t={t} />} />
       </Routes>
