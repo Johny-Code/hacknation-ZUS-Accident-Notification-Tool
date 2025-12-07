@@ -28,7 +28,11 @@ Na podstawie wejściowego JSON-a z informacjami pochodzącymi z formularza EWYP 
 
 W odpowiedzi zawrzyj uwagi do tych pól, które nie spełniają kryteriów kompletności, wraz z uzasadnieniem, które wytłumaczy zgłaszającemu, dlaczego formularz nie został zaakceptowany. Komentarze odnośnie konkretnych pól zostaną wyświetlone zgłaszającemu przy danym polu w formularzu. Zawrzyj także krótki, ogólny komentarz, dlaczego formularz nie został zaakceptowany.
 
-UWAGA: Sprawdzany przez Ciebie formularz musi dotyczyć osoby prowadzącej działalność gospodarczą. Jeśli jest inaczej, opisz to w komentarzu ogólnym.
+# Dodatkowe uwagi
+
+- Sprawdzany przez Ciebie formularz musi dotyczyć osoby prowadzącej działalność gospodarczą. Jeśli jest inaczej, opisz to w komentarzu ogólnym.
+- w przypadku wątpliwości, czy doznany wskutek wypadku uraz, spełnia kryteria definicyjne
+wypadku przy pracy, wskaż na konieczność pozyskania opinii Głównego Lekarza Orzecznika ZUS.
 
 Jeżeli wszystkie pola spełniają kryteria kompletności, to zwróć valid: True, a w innym przypadku False.
 """
