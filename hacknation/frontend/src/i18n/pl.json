@@ -146,7 +146,8 @@
     "empty_folder": "Ten folder jest pusty",
     "back_to_folders": "Wróć do listy folderów",
     "pdf_count": "dokumentów PDF",
-    "pdf_preview": "Podgląd dokumentu",
+    "pdf_preview": "Podgląd",
+    "download_file": "Pobierz",
     "analyze_ai": "Analiza AI",
     "analyzing": "Analizowanie...",
     "loading": "Ładowanie..."

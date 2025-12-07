@@ -2049,6 +2049,15 @@ function PracownikPage({ t }) {
       });
       const data = await response.json();
       setAiResult(data);
+      
+      // Refresh file list after successful AI analysis to show the new generated file
+      if (data.success) {
+        const folderResponse = await fetch(`${API_URL}/pracownik/folders/${currentFolder}`);
+        const folderData = await folderResponse.json();
+        if (folderData.success) {
+          setFiles(folderData.items);
+        }
+      }
     } catch (error) {
       console.error('Error analyzing with AI:', error);
       setAiResult({ success: false, message: 'Błąd połączenia z backendem' });
@@ -2167,22 +2176,36 @@ function PracownikPage({ t }) {
             </div>
           ) : (
             <div className="file-list">
-              {files.map((file) => (
-                <div 
-                  key={file.name} 
-                  className="file-card"
-                  onClick={() => viewPdf(file.name)}
-                >
-                  <div className="file-icon">📄</div>
-                  <div className="file-info">
-                    <span className="file-name">{file.name}</span>
-                    <span className="file-meta">{formatFileSize(file.size_bytes)}</span>
+              {files.map((file) => {
+                const isDocx = file.file_type === 'docx' || file.name.endsWith('.docx');
+                return (
+                  <div 
+                    key={file.name} 
+                    className="file-card"
+                    onClick={() => !isDocx && viewPdf(file.name)}
+                  >
+                    <div className="file-icon">{isDocx ? '📝' : '📄'}</div>
+                    <div className="file-info">
+                      <span className="file-name">{file.name}</span>
+                      <span className="file-meta">{formatFileSize(file.size_bytes)}</span>
+                    </div>
+                    {isDocx ? (
+                      <a 
+                        href={`${API_URL}/pracownik/download/${currentFolder}/${file.name}`}
+                        className="file-download-button"
+                        download={file.name}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        ⬇️ {t('pracownik.download_file')}
+                      </a>
+                    ) : (
+                      <button className="file-view-button">
+                        👁️ {t('pracownik.pdf_preview')}
+                      </button>
+                    )}
                   </div>
-                  <button className="file-view-button">
-                    👁️ {t('pracownik.pdf_preview')}
-                  </button>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
