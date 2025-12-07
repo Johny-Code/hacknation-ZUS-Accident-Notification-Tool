@@ -1984,6 +1984,11 @@ function PracownikPage({ t }) {
   const [selectedPdf, setSelectedPdf] = useState(null);
   const [aiResult, setAiResult] = useState(null);
   const [analyzing, setAnalyzing] = useState(false);
+  
+  // New states for consistency check workflow
+  const [consistencyResult, setConsistencyResult] = useState(null);
+  const [showInconsistencyWarning, setShowInconsistencyWarning] = useState(false);
+  const [generatingDocuments, setGeneratingDocuments] = useState(false);
 
   // Fetch folders on mount
   useEffect(() => {
@@ -2028,6 +2033,8 @@ function PracownikPage({ t }) {
     setFiles([]);
     setSelectedPdf(null);
     setAiResult(null);
+    setConsistencyResult(null);
+    setShowInconsistencyWarning(false);
   };
 
   const viewPdf = (filename) => {
@@ -2043,14 +2050,72 @@ function PracownikPage({ t }) {
     
     setAnalyzing(true);
     setAiResult(null);
+    setConsistencyResult(null);
+    setShowInconsistencyWarning(false);
+    
     try {
-      const response = await fetch(`${API_URL}/pracownik/analiza-ai/${currentFolder}`, {
+      // Step 1: Check consistency between documents
+      const consistencyResponse = await fetch(`${API_URL}/pracownik/check-consistency/${currentFolder}`, {
+        method: 'POST'
+      });
+      const consistencyData = await consistencyResponse.json();
+      
+      if (!consistencyData.success) {
+        setAiResult({ success: false, message: consistencyData.message || 'Błąd sprawdzania spójności' });
+        setAnalyzing(false);
+        return;
+      }
+      
+      // Check if analysis can proceed
+      if (!consistencyData.can_proceed) {
+        if (consistencyData.already_analyzed) {
+          setAiResult({ 
+            success: false, 
+            message: consistencyData.message || 'Analiza AI została już przeprowadzona dla tego folderu.'
+          });
+        } else {
+          setAiResult({ 
+            success: false, 
+            message: consistencyData.message || `Wymagane są dokładnie 2 dokumenty PDF. Obecnie: ${consistencyData.pdf_count}`
+          });
+        }
+        setAnalyzing(false);
+        return;
+      }
+      
+      setConsistencyResult(consistencyData);
+      
+      // If documents are inconsistent, show warning and wait for user confirmation
+      if (!consistencyData.is_consistent) {
+        setShowInconsistencyWarning(true);
+        setAnalyzing(false);
+        return;
+      }
+      
+      // Documents are consistent - proceed directly to generation
+      await generateDocuments();
+      
+    } catch (error) {
+      console.error('Error analyzing with AI:', error);
+      setAiResult({ success: false, message: 'Błąd połączenia z backendem' });
+      setAnalyzing(false);
+    }
+  };
+
+  const generateDocuments = async () => {
+    if (!currentFolder) return;
+    
+    setGeneratingDocuments(true);
+    setShowInconsistencyWarning(false);
+    
+    try {
+      const response = await fetch(`${API_URL}/pracownik/generate-documents/${currentFolder}`, {
         method: 'POST'
       });
       const data = await response.json();
       setAiResult(data);
       
-      // Refresh file list after successful AI analysis to show the new generated file
+      // Refresh file list after successful generation
       if (data.success) {
         const folderResponse = await fetch(`${API_URL}/pracownik/folders/${currentFolder}`);
         const folderData = await folderResponse.json();
@@ -2059,10 +2124,26 @@ function PracownikPage({ t }) {
         }
       }
     } catch (error) {
-      console.error('Error analyzing with AI:', error);
-      setAiResult({ success: false, message: 'Błąd połączenia z backendem' });
+      console.error('Error generating documents:', error);
+      setAiResult({ success: false, message: 'Błąd generowania dokumentów' });
     } finally {
+      setGeneratingDocuments(false);
       setAnalyzing(false);
+    }
+  };
+
+  const handleInconsistencyConfirm = async (proceed) => {
+    if (proceed) {
+      // User wants to proceed despite inconsistencies
+      await generateDocuments();
+    } else {
+      // User cancelled
+      setShowInconsistencyWarning(false);
+      setConsistencyResult(null);
+      setAiResult({ 
+        success: false, 
+        message: 'Analiza anulowana przez użytkownika z powodu wykrytych niespójności.' 
+      });
     }
   };
 
@@ -2148,12 +2229,12 @@ function PracownikPage({ t }) {
             <button 
               className="ai-analyze-button"
               onClick={analyzeWithAI}
-              disabled={analyzing}
+              disabled={analyzing || generatingDocuments || showInconsistencyWarning}
             >
-              {analyzing ? (
+              {analyzing || generatingDocuments ? (
                 <>
                   <span className="spinner-small"></span>
-                  {t('pracownik.analyzing')}
+                  {generatingDocuments ? 'Generowanie dokumentów...' : t('pracownik.analyzing')}
                 </>
               ) : (
                 <>🤖 {t('pracownik.analyze_ai')}</>
@@ -2161,11 +2242,61 @@ function PracownikPage({ t }) {
             </button>
           </div>
 
+          {/* Inconsistency Warning Dialog */}
+          {showInconsistencyWarning && consistencyResult && (
+            <div className="inconsistency-warning">
+              <div className="inconsistency-warning-header">
+                <span className="inconsistency-warning-icon">⚠️</span>
+                <h3>Wykryto niespójności w dokumentach</h3>
+              </div>
+              <div className="inconsistency-warning-body">
+                <p className="inconsistency-summary">{consistencyResult.summary}</p>
+                {consistencyResult.inconsistencies && consistencyResult.inconsistencies.length > 0 && (
+                  <div className="inconsistency-list">
+                    <h4>Wykryte niespójności:</h4>
+                    <ul>
+                      {consistencyResult.inconsistencies.map((item, index) => (
+                        <li key={index}>{item}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                <p className="inconsistency-question">
+                  Czy mimo to chcesz kontynuować analizę AI i wygenerować dokumenty?
+                </p>
+              </div>
+              <div className="inconsistency-warning-actions">
+                <button 
+                  className="inconsistency-btn inconsistency-btn-cancel"
+                  onClick={() => handleInconsistencyConfirm(false)}
+                >
+                  ❌ Nie, anuluj
+                </button>
+                <button 
+                  className="inconsistency-btn inconsistency-btn-confirm"
+                  onClick={() => handleInconsistencyConfirm(true)}
+                >
+                  ✅ Tak, kontynuuj
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* AI Analysis Result */}
-          {aiResult && (
+          {aiResult && !showInconsistencyWarning && (
             <div className={`ai-result ${aiResult.success ? 'ai-result-success' : 'ai-result-error'}`}>
               <span className="ai-result-icon">{aiResult.success ? '✅' : '❌'}</span>
               <span className="ai-result-message">{aiResult.message}</span>
+              {aiResult.generated_files && aiResult.generated_files.length > 0 && (
+                <div className="ai-result-files">
+                  <p>Wygenerowane pliki:</p>
+                  <ul>
+                    {aiResult.generated_files.map((file, index) => (
+                      <li key={index}>📄 {file}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
           )}
 

@@ -12,7 +12,7 @@ uploads/*
 build/
 dist/
 *.egg-info/
-
+backend/pdfs/*
 # Environment
 .env
 .env.local

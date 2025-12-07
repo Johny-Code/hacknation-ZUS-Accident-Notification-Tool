@@ -1030,7 +1030,8 @@ body {
 /* AI Result */
 .ai-result {
   display: flex;
-  align-items: center;
+  flex-wrap: wrap;
+  align-items: flex-start;
   gap: 1rem;
   padding: 1rem 1.5rem;
   border-radius: 10px;
@@ -1055,6 +1056,174 @@ body {
 .ai-result-message {
   color: var(--text-primary);
   font-weight: 500;
+}
+
+.ai-result-files {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  width: 100%;
+}
+
+.ai-result-files p {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.5rem;
+}
+
+.ai-result-files ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.ai-result-files li {
+  font-size: 0.9rem;
+  color: var(--text-primary);
+  padding: 0.25rem 0;
+}
+
+/* Inconsistency Warning Dialog */
+.inconsistency-warning {
+  background: var(--bg-card);
+  border: 2px solid #fbbf24;
+  border-radius: 16px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.inconsistency-warning-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.inconsistency-warning-icon {
+  font-size: 1.75rem;
+}
+
+.inconsistency-warning-header h3 {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #fbbf24;
+  margin: 0;
+}
+
+.inconsistency-warning-body {
+  margin-bottom: 1.5rem;
+}
+
+.inconsistency-summary {
+  color: var(--text-primary);
+  font-size: 0.95rem;
+  line-height: 1.5;
+  margin-bottom: 1rem;
+  padding: 1rem;
+  background: var(--bg-secondary);
+  border-radius: 8px;
+}
+
+.inconsistency-list {
+  margin-bottom: 1rem;
+}
+
+.inconsistency-list h4 {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #fbbf24;
+  margin-bottom: 0.75rem;
+}
+
+.inconsistency-list ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.inconsistency-list li {
+  position: relative;
+  padding: 0.75rem 1rem 0.75rem 2rem;
+  margin-bottom: 0.5rem;
+  background: rgba(251, 191, 36, 0.08);
+  border: 1px solid rgba(251, 191, 36, 0.2);
+  border-left: 3px solid #fbbf24;
+  border-radius: 6px;
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.inconsistency-list li::before {
+  content: "⚠";
+  position: absolute;
+  left: 0.75rem;
+  color: #fbbf24;
+}
+
+.inconsistency-question {
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  margin-top: 1rem;
+}
+
+.inconsistency-warning-actions {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.inconsistency-btn {
+  flex: 1;
+  min-width: 150px;
+  padding: 1rem 1.5rem;
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.inconsistency-btn-cancel {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+}
+
+.inconsistency-btn-cancel:hover {
+  border-color: var(--error);
+  color: var(--error);
+  background: rgba(248, 113, 113, 0.1);
+}
+
+.inconsistency-btn-confirm {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  border: none;
+  color: white;
+}
+
+.inconsistency-btn-confirm:hover {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
 }
 
 /* PDF Modal */

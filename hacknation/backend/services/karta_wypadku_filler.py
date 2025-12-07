@@ -212,53 +212,33 @@ def generate_karta_wypadku_proposal(
     Args:
         folder_path: Path to the PESEL folder
         folder_name: Name of the folder (usually PESEL number)
-        data: Optional dictionary with data to fill. If None, uses sample data.
+        data: Dictionary with data to fill from AI analysis.
+              If None, uses minimal placeholder data.
 
     Returns:
         Dictionary with success status and generated filename
     """
-    # TODO: In production, this data should come from analyzing the folder's PDFs
-    # For now, use sample data that matches the template fields
+    # If no data provided, use minimal placeholders
+    # In the new workflow, AI-generated data should always be provided
     if data is None:
+        logger.warning("No AI-generated data provided, using minimal placeholders")
         data = {
-            # Section I - Dane płatnika składek
-            "PAYERNAME": "ABC Sp. z o.o.",
-            "PAYERADDRESS": "ul. Przykładowa 123, 00-001 Warszawa",
-            "PAYERNIP": "1234567890",
-            "PAYERREGON": "123456789",
-            "PAYERPESEL": "",
-            "PAYERDOCUMENTTYPE": "KRS",
-            "PAYERDOCUMENTTYPESERIES": "",
-            "PAYERDOCUMENTTYPENUMBER": "0000123456",
-
-            # Section II - Dane poszkodowanego
-            "VICTIMNAME": "Jan Kowalski",
-            "VICTIMPESEL": folder_name,  # Use folder name (PESEL) as victim's PESEL
-            "VICTIMDOCUMENTTYPE": "Dowód osobisty",
-            "VICTIMDOCUMENTTYPESERIES": "ABC",
-            "VICTIMDOCUMENTTYPENUMBER": "123456",
-            "VICTIMDATEPLACEBIRTH": "01.01.1985, Kraków",
-            "VICTIMADDRESS": "ul. Testowa 45/12, 30-100 Kraków",
-            "INSURANCETITLE": "Pkt 1 - osoba prowadząca działalność",
-
-            # Section III - Informacje o wypadku
-            "REPORTDATEREPORTERNAME": f"{datetime.now().strftime('%d.%m.%Y')}, Anna Nowak",
-            "CIRCUMSTANCESINFORMATION": "Poszkodowany doznał urazu podczas wykonywania czynności związanych z prowadzeniem działalności gospodarczej.",
-            "WITNESS1": "Maria Wiśniewska, ul. Kwiatowa 5, Warszawa",
-            "WITNESS2": "Piotr Zieliński, ul. Słoneczna 10, Warszawa",
-            "ACCIDENTIS": "Wypadek JEST wypadkiem przy pracy (art. 3 ust. 3 pkt 1).",
-            "VICTIMFAULT": "Nie stwierdzono naruszenia przepisów.",
-            "VICTIMDRUNK": "Nie stwierdzono - wynik badania negatywny.",
-
-            # Section IV - Pozostałe informacje
-            "VICTIMSFAMILYMEMBERNAME": "Jan Kowalski",
-            "VICTIMSFAMILYMEMBERDATE": datetime.now().strftime("%d.%m.%Y"),
+            # Only set PESEL from folder name, rest should come from AI
+            "VICTIMPESEL": folder_name,
             "CARDDATE": datetime.now().strftime("%d.%m.%Y"),
-            "CARDISSUER": "ABC Sp. z o.o.",
-            "CARDISSUERNAME": "Tomasz Kamiński - Specjalista BHP",
-            "DIFFICULTIES": "Brak przeszkód.",
             "RECEIVEDDATE": datetime.now().strftime("%d.%m.%Y"),
         }
+    else:
+        # Ensure VICTIMPESEL is set from folder name if not provided
+        if "VICTIMPESEL" not in data or not data.get("VICTIMPESEL"):
+            data["VICTIMPESEL"] = folder_name
+        
+        # Add default dates if not provided
+        today = datetime.now().strftime("%d.%m.%Y")
+        if "CARDDATE" not in data or not data.get("CARDDATE"):
+            data["CARDDATE"] = today
+        if "RECEIVEDDATE" not in data or not data.get("RECEIVEDDATE"):
+            data["RECEIVEDDATE"] = today
 
     # Generate filename
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
