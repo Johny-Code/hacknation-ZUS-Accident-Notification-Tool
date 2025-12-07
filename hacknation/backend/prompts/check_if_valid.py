@@ -54,7 +54,7 @@ Sprawdź czy podane opisy są kompletne, spójne i czy zawierają wszystkie wyma
 - opisOkolicznosciWypadku,
 - czyWStanieNietrzezwosci.
 
-W odpowiedzi zawrzyj te pola, które nie spełniają kryteriów kompletności. Napisz w nich dlaczego to pole nie spełnia kryteriów kompletności. Zawrzyj także krótki komentarz, który wytłumaczy zgłaszającemu, dlaczego formularz nie został zaakceptowany. Ten komentarz zostanie wyświetlony zgłaszającemu na górze formularza. Komentarze odnośnie konkretnych pól zostaną wyświetlone zgłaszającemu przy danym polu w formularzu.
+W odpowiedzi zawrzyj te pola, które nie spełniają kryteriów kompletności. Napisz w nich dlaczego to pole nie spełnia kryteriów kompletności. Zawrzyj także krótki komentarz, który wytłumaczy zgłaszającemu, dlaczego formularz nie został zaakceptowany. Ten komentarz zostanie wyświetlony zgłaszającemu na górze formularza. Komentarze odnośnie konkretnych pól zostaną wyświetlone zgłaszającemu przy danym polu w formularzu. Nie kwestionuj danych w kontekście deklaracji stanu nietrzeźwości (pomimo braku badania). 
 
 Jeżeli wszystkie pola spełniają kryteria kompletności, to zwróć valid: True, a w innym przypadku False
 """

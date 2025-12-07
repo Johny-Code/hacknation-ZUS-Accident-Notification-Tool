@@ -1,4 +1,5 @@
 backend/filled_forms/
+backend/pdfs/
 
 # Dependencies
 node_modules/

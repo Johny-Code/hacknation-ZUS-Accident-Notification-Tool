@@ -85,7 +85,7 @@ function SkanPage({ t }) {
     setFile(selectedFile);
     setOcrResult(null);
     setValidationData(null);
-    setStatus({ type: 'loading', message: t('skan.uploading') });
+    setStatus({ type: 'loading', message: 'Poprawność załączonego skanu jest sprawdzana...' });
 
     const formData = new FormData();
     formData.append('file', selectedFile);
@@ -190,7 +190,8 @@ function SkanPage({ t }) {
       )}
 
       {status && (
-        <div className={`status-message status-${status.type === 'loading' ? 'success' : status.type}`}>
+        <div className={`status-message ${status.type === 'loading' ? 'status-loading' : `status-${status.type}`}`}>
+          {status.type === 'loading' && <span className="spinner-inline"></span>}
           {status.message}
         </div>
       )}
@@ -737,8 +738,10 @@ function FormPage({ t }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setStatus(null);
+    setStatus({ type: 'loading', message: 'Trwa weryfikacja formularza...' });
     setValidationErrors(null);
+    // Scroll to top to show loading notification
+    window.scrollTo({ top: 0, behavior: 'smooth' });
 
     try {
       const payload = buildPayload(formData);
@@ -751,7 +754,6 @@ function FormPage({ t }) {
       const data = await response.json();
 
       if (data.success && data.data?.valid) {
-        setStatus({ type: 'success', message: data.message || t('form.success') });
         setValidationErrors(null);
         // Form is valid - navigate to success PDF page
         if (data.data.pdf_filename) {
@@ -759,6 +761,7 @@ function FormPage({ t }) {
             state: {
               pdfFilename: data.data.pdf_filename,
               incidentFolderPath: data.data.incident_folder_path,
+              peselFolderPath: data.data.pesel_folder_path,
               validationComment: data.data.comment
             }
           });
@@ -787,7 +790,8 @@ function FormPage({ t }) {
       <h1 className="page-title">{t('form.title')}</h1>
 
       {status && (
-        <div className={`status-message status-${status.type}`}>
+        <div className={`status-message ${status.type === 'loading' ? 'status-loading' : `status-${status.type}`}`}>
+          {status.type === 'loading' && <span className="spinner-inline"></span>}
           {status.message}
         </div>
       )}
@@ -831,7 +835,12 @@ function FormPage({ t }) {
               type="text"
               className={`form-input ${fieldErrors['daneOsobyPoszkodowanej.pesel'] ? 'form-input-error' : ''}`}
               value={formData.daneOsobyPoszkodowanej.pesel}
-              onChange={(e) => updateField(['daneOsobyPoszkodowanej', 'pesel'], e.target.value)}
+              onChange={(e) => {
+                const value = e.target.value.replace(/\D/g, '').slice(0, 11);
+                updateField(['daneOsobyPoszkodowanej', 'pesel'], value);
+              }}
+              maxLength="11"
+              pattern="\d{11}"
               required
             />
             {fieldErrors['daneOsobyPoszkodowanej.pesel'] && (
@@ -986,7 +995,17 @@ function FormPage({ t }) {
               </div>
               <div className="form-group">
                 <label className="form-label">{t('form.fields.pesel')}</label>
-                <input type="text" className="form-input" value={formData.daneOsobyKtoraZawiadamia.pesel} onChange={(e) => updateField(['daneOsobyKtoraZawiadamia', 'pesel'], e.target.value)} />
+                <input 
+                  type="text" 
+                  className="form-input" 
+                  value={formData.daneOsobyKtoraZawiadamia.pesel} 
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/\D/g, '').slice(0, 11);
+                    updateField(['daneOsobyKtoraZawiadamia', 'pesel'], value);
+                  }}
+                  maxLength="11"
+                  pattern="\d{11}"
+                />
               </div>
                <div className="form-group">
                   <label className="form-label">{t('form.fields.dataUrodzenia')}</label>
@@ -1303,7 +1322,12 @@ function FormPage({ t }) {
 
 
           <button type="submit" className="submit-button" disabled={loading}>
-            {t('form.submit')}
+            {loading ? (
+              <>
+                <span className="spinner-inline"></span>
+                Trwa weryfikacja...
+              </>
+            ) : t('form.submit')}
           </button>
         </form>
 
@@ -1436,7 +1460,9 @@ function WyjasnieniaPoszkodowanegoFormPage({ t }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setStatus(null);
+    setStatus({ type: 'loading', message: 'Trwa weryfikacja formularza...' });
+    // Scroll to top to show loading notification
+    window.scrollTo({ top: 0, behavior: 'smooth' });
 
     try {
       // Remove empty fields
@@ -1451,13 +1477,24 @@ function WyjasnieniaPoszkodowanegoFormPage({ t }) {
       });
       const data = await response.json();
 
-      if (data.success) {
+      if (data.success && data.data?.valid) {
+        // Validation passed - navigate to success page
+        navigate('/success-pdf', {
+          state: {
+            pdfFilename: data.data.pdf_filename,
+            peselFolderPath: data.data.pesel_folder_path,
+            validationComment: data.data.comment
+          }
+        });
+      } else if (data.success) {
+        // Success but no valid flag - just show message
         setStatus({ type: 'success', message: data.message || 'Formularz został wysłany pomyślnie!' });
         if (data.data?.pdf_filename) {
           navigate('/success-pdf', {
             state: {
               pdfFilename: data.data.pdf_filename,
               incidentFolderPath: data.data.incident_folder_path,
+              peselFolderPath: data.data.pesel_folder_path,
               validationComment: data.data.comment
             }
           });
@@ -1467,9 +1504,13 @@ function WyjasnieniaPoszkodowanegoFormPage({ t }) {
         if (data.data?.fieldErrors) {
           setFieldErrors(data.data.fieldErrors);
         }
+        // Scroll to top to show error notification
+        window.scrollTo({ top: 0, behavior: 'smooth' });
       }
     } catch (error) {
       setStatus({ type: 'error', message: 'Wystąpił błąd podczas wysyłania formularza.' });
+      // Scroll to top to show error notification
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     } finally {
       setLoading(false);
     }
@@ -1480,7 +1521,8 @@ function WyjasnieniaPoszkodowanegoFormPage({ t }) {
       <h1 className="page-title">Wyjaśnienia poszkodowanego</h1>
 
       {status && (
-        <div className={`status-message status-${status.type}`}>
+        <div className={`status-message ${status.type === 'loading' ? 'status-loading' : `status-${status.type}`}`}>
+          {status.type === 'loading' && <span className="spinner-inline"></span>}
           {status.message}
         </div>
       )}
@@ -1954,7 +1996,12 @@ function WyjasnieniaPoszkodowanegoFormPage({ t }) {
           </div>
 
           <button type="submit" className="submit-button" disabled={loading}>
-            {loading ? 'Wysyłanie...' : 'Wyślij formularz'}
+            {loading ? (
+              <>
+                <span className="spinner-inline"></span>
+                Trwa weryfikacja...
+              </>
+            ) : 'Wyślij formularz'}
           </button>
         </form>
 
@@ -2353,31 +2400,38 @@ function PracownikPage({ t }) {
   );
 }
 
-// Success Page with PDF Preview (PDF is automatically saved to incident folder on backend)
+// Success Page with PDF Preview (PDF is automatically saved to incident/PESEL folder on backend)
 function SuccessPdfPage({ t }) {
   const location = useLocation();
   const navigate = useNavigate();
-  const { pdfFilename, incidentFolderPath, validationComment } = location.state || {};
+  const { pdfFilename, incidentFolderPath, peselFolderPath, validationComment } = location.state || {};
+  
+  // Use whichever folder path is available (incidentFolderPath for EWYP, peselFolderPath for Wyjaśnienia)
+  const folderPath = incidentFolderPath || peselFolderPath;
 
-  // Redirect if no PDF filename provided
+  // Redirect if no state provided at all
   useEffect(() => {
-    if (!pdfFilename) {
+    if (!location.state) {
       navigate('/form');
     }
-  }, [pdfFilename, navigate]);
+  }, [location.state, navigate]);
 
-  if (!pdfFilename) {
+  if (!location.state) {
     return null;
   }
 
-  // Use the incident folder path if available, otherwise fall back to filled_forms
-  const pdfViewUrl = incidentFolderPath 
-    ? `${API_URL}/form/view/${incidentFolderPath}`
-    : `${API_URL}/form/view-filled/${pdfFilename}`;
+  // Use the folder path if available, otherwise fall back to filled_forms
+  const pdfViewUrl = pdfFilename
+    ? (folderPath 
+        ? `${API_URL}/form/view/${folderPath}`
+        : `${API_URL}/form/view-filled/${pdfFilename}`)
+    : null;
   
-  const pdfDownloadUrl = incidentFolderPath
-    ? `${API_URL}/form/download-from-incident/${incidentFolderPath}`
-    : `${API_URL}/form/download/${pdfFilename}`;
+  const pdfDownloadUrl = pdfFilename
+    ? (folderPath
+        ? `${API_URL}/form/download-from-folder/${folderPath}`
+        : `${API_URL}/form/download/${pdfFilename}`)
+    : null;
 
   return (
     <div className="page-container success-pdf-page">
@@ -2396,27 +2450,41 @@ function SuccessPdfPage({ t }) {
         </div>
       )}
 
-      {/* PDF Preview Section */}
-      <div className="pdf-preview-section">
-        <h2 className="section-title">{t('success.pdf_preview')}</h2>
-        <div className="pdf-embed-container">
-          <iframe
-            src={`${pdfViewUrl}#toolbar=0`}
-            title="PDF Preview"
-            className="pdf-iframe"
-          />
+      {/* PDF Preview Section - only show if PDF is available */}
+      {pdfFilename && pdfViewUrl && (
+        <div className="pdf-preview-section">
+          <h2 className="section-title">{t('success.pdf_preview')}</h2>
+          <div className="pdf-embed-container">
+            <iframe
+              src={`${pdfViewUrl}#toolbar=0`}
+              title="PDF Preview"
+              className="pdf-iframe"
+            />
+          </div>
         </div>
-      </div>
+      )}
+
+      {/* Message when PDF is not available */}
+      {!pdfFilename && (
+        <div className="validation-success-banner" style={{ background: '#fef3c7', borderColor: '#f59e0b' }}>
+          <span className="validation-success-icon">ℹ️</span>
+          <p className="validation-success-text">
+            Formularz został zweryfikowany pomyślnie, ale plik PDF nie jest jeszcze dostępny do pobrania.
+          </p>
+        </div>
+      )}
 
       {/* Navigation Buttons */}
       <div className="success-navigation">
-        <a 
-          href={pdfDownloadUrl} 
-          className="nav-action-button download-button"
-          download={pdfFilename}
-        >
-          ⬇️ {t('success.download_pdf')}
-        </a>
+        {pdfFilename && pdfDownloadUrl && (
+          <a 
+            href={pdfDownloadUrl} 
+            className="nav-action-button download-button"
+            download={pdfFilename}
+          >
+            ⬇️ {t('success.download_pdf')}
+          </a>
+        )}
         <Link to="/form" className="nav-action-button primary-button">
           📝 {t('success.new_form')}
         </Link>

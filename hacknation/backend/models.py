@@ -164,51 +164,54 @@ class WyjasnieniaPoszkodowanego(BaseModel):
     """
     Model formularza 'Wyjaśnienia poszkodowanego'.
     Używany przy zgłaszaniu wyjaśnień dotyczących wypadku.
+    
+    All fields are Optional to allow partial data from OCR/scan.
+    Required field validation is handled by JSON schema in the endpoint.
     """
     # Dane osobowe
-    imieNazwisko: str
-    dataUrodzenia: str  # format: YYYY-MM-DD
-    miejsceUrodzenia: str
-    adresZamieszkania: str
-    zatrudnienie: str
-    dokumentTozsamosci: str
+    imieNazwisko: Optional[str] = None
+    dataUrodzenia: Optional[str] = None  # format: YYYY-MM-DD
+    miejsceUrodzenia: Optional[str] = None
+    adresZamieszkania: Optional[str] = None
+    zatrudnienie: Optional[str] = None
+    dokumentTozsamosci: Optional[str] = None
 
     # Informacje o wypadku
-    dataWypadku: str  # format: YYYY-MM-DD
-    miejsceWypadku: str
-    godzinaWypadku: str
-    planowanaGodzinaRozpoczeciaPracy: str
-    planowanaGodzinaZakonczeniaPracy: str
+    dataWypadku: Optional[str] = None  # format: YYYY-MM-DD
+    miejsceWypadku: Optional[str] = None
+    godzinaWypadku: Optional[str] = None
+    planowanaGodzinaRozpoczeciaPracy: Optional[str] = None
+    planowanaGodzinaZakonczeniaPracy: Optional[str] = None
 
     # Okoliczności wypadku
-    rodzajCzynnosciPrzedWypadkiem: str
-    opisOkolicznosciWypadku: str
+    rodzajCzynnosciPrzedWypadkiem: Optional[str] = None
+    opisOkolicznosciWypadku: Optional[str] = None
 
     # Maszyny i urządzenia
-    czyWypadekPodczasObslugiMaszyn: bool
+    czyWypadekPodczasObslugiMaszyn: Optional[bool] = None
     nazwaTypUrzadzenia: Optional[str] = None
     dataProdukcjiUrzadzenia: Optional[str] = None
     czyUrzadzenieSprawneIUzytkowanePrawidlowo: Optional[str] = None
 
     # Zabezpieczenia
-    czyBylyZabezpieczenia: bool
+    czyBylyZabezpieczenia: Optional[bool] = None
     rodzajZabezpieczen: Optional[str] = None
     czySrodkiWlasciweISprawne: Optional[bool] = None
 
     # Warunki pracy
-    czyAsekuracja: bool
+    czyAsekuracja: Optional[bool] = None
     czyObowiazekPracyPrzezDwieOsoby: Optional[bool] = None
 
     # BHP
-    czyPrzestrzeganoZasadBHP: bool
-    czyPosiadamPrzygotowanieZawodowe: bool
-    czyOdbylemSzkolenieBHP: bool
-    czyPosiadamOceneRyzykaZawodowego: bool
+    czyPrzestrzeganoZasadBHP: Optional[bool] = None
+    czyPosiadamPrzygotowanieZawodowe: Optional[bool] = None
+    czyOdbylemSzkolenieBHP: Optional[bool] = None
+    czyPosiadamOceneRyzykaZawodowego: Optional[bool] = None
     stosowaneSrodkiZmniejszajaceRyzyko: Optional[str] = None
 
     # Stan trzeźwości
-    czyWStanieNietrzezwosci: bool
-    stanTrzezwosciBadany: str  # enum: badany_przez_policje, badany_podczas_pierwszej_pomocy, nie_badany
+    czyWStanieNietrzezwosci: Optional[bool] = None
+    stanTrzezwosciBadany: Optional[str] = None  # enum: badany_przez_policje, badany_podczas_pierwszej_pomocy, nie_badany
 
     # Organy prowadzące czynności
     czyOrganyPodejmowalyCzynnosci: Optional[bool] = None

@@ -13,7 +13,8 @@ from services.ocr import process_pdf_ocr
 from services.validation import validate_data, validate_wyjasnienia, SchemaType
 from services.check_if_report_valid import check_if_report_valid, check_if_wyjasnienia_valid
 from services.pdf_filler import generate_filled_pdf
-from routes.form import get_incident_folder
+from services.wyjasnienia_filler import generate_wyjasnienia_pdf
+from routes.form import get_incident_folder, get_pesel_folder
 
 logger = logging.getLogger(__name__)
 
@@ -395,14 +396,81 @@ async def upload_scan(
                 }
             )
         
-        # Step 4: Generate TXT/PDF file
-        # TODO: Implement TXT/PDF generation for 'Wyjaśnienia poszkodowanego'
-        # This functionality is not yet implemented in form.py either
+        # Step 4: All validation passed - generate filled PDF
+        logger.info("All validations passed for Wyjaśnienia - generating PDF")
+        try:
+            pdf_path = generate_wyjasnienia_pdf(
+                form_data=ocr_data,
+                output_dir=FILLED_FORMS_DIR,
+                filename_prefix=f"WYJASNIENIA_scan_{timestamp}"
+            )
+            pdf_filename = pdf_path.name
+            logger.info(f"Generated Wyjaśnienia PDF: {pdf_filename}")
+        except FileNotFoundError as e:
+            logger.error(f"Wyjaśnienia PDF template not found: {e}")
+            return ScanResponse(
+                success=True,
+                message="Wstępna walidacja przebiegła pomyślnie, dane są poprawnie wypełnione. Walidacja merytoryczna zakończona sukcesem, ale generowanie PDF nie powiodło się: brak szablonu",
+                ocr_result=ocr_result_json,
+                data={
+                    "filename": file.filename,
+                    "file_id": file_id,
+                    "user_id": user_id,
+                    "size_bytes": file_size,
+                    "stored_path": str(file_path),
+                    "validationStage": "completed",
+                    "valid": True,
+                    "comment": validity_check.comment if validity_check else "Wszystkie walidacje przebiegły pomyślnie",
+                    "fieldErrors": field_errors,
+                    "json_filename": json_filename,
+                    "pdf_filename": None,
+                    "document_type": ocr_result["document_type"],
+                    "formData": ocr_data
+                }
+            )
+        except Exception as e:
+            logger.error(f"Wyjaśnienia PDF generation failed: {e}")
+            return ScanResponse(
+                success=True,
+                message=f"Wstępna walidacja przebiegła pomyślnie, dane są poprawnie wypełnione. Walidacja merytoryczna zakończona sukcesem, ale generowanie PDF nie powiodło się: {str(e)}",
+                ocr_result=ocr_result_json,
+                data={
+                    "filename": file.filename,
+                    "file_id": file_id,
+                    "user_id": user_id,
+                    "size_bytes": file_size,
+                    "stored_path": str(file_path),
+                    "validationStage": "completed",
+                    "valid": True,
+                    "comment": validity_check.comment if validity_check else "Wszystkie walidacje przebiegły pomyślnie",
+                    "fieldErrors": field_errors,
+                    "json_filename": json_filename,
+                    "pdf_filename": None,
+                    "document_type": ocr_result["document_type"],
+                    "formData": ocr_data
+                }
+            )
         
-        # Step 5: Success - LLM validation passed
+        # Step 5: Save PDF to PESEL folder (if PESEL available in Wyjaśnienia data)
+        # Note: Wyjaśnienia uses different field structure - try to extract PESEL if available
+        pesel = ocr_data.get("pesel", "")
+        pesel_folder_path = None
+        
+        if pesel and len(pesel) == 11 and pesel.isdigit():
+            try:
+                target_folder = get_pesel_folder(pesel)
+                target_path = target_folder / pdf_filename
+                shutil.copy2(pdf_path, target_path)
+                pesel_folder_path = f"{target_folder.name}/{pdf_filename}"
+                logger.info(f"Wyjaśnienia PDF automatically saved to PESEL folder: {target_path}")
+            except Exception as e:
+                logger.error(f"Failed to save Wyjaśnienia PDF to PESEL folder: {e}")
+                # Continue anyway - the PDF is still in filled_forms
+        
+        # Step 6: Success - all done
         return ScanResponse(
             success=True,
-            message="Wstępna walidacja przebiegła pomyślnie, dane są poprawnie wypełnione. Walidacja merytoryczna zakończona sukcesem. Dokument 'Wyjaśnienia poszkodowanego' został zapisany.",
+            message="Wstępna walidacja przebiegła pomyślnie, dane są poprawnie wypełnione. Walidacja merytoryczna zakończona sukcesem. PDF został wygenerowany.",
             ocr_result=ocr_result_json,
             data={
                 "filename": file.filename,
@@ -415,7 +483,8 @@ async def upload_scan(
                 "comment": validity_check.comment if validity_check else "Wszystkie walidacje przebiegły pomyślnie",
                 "fieldErrors": field_errors,
                 "json_filename": json_filename,
-                "pdf_filename": None,  # TODO: Add when PDF/TXT generation is implemented
+                "pdf_filename": pdf_filename,
+                "pesel_folder_path": pesel_folder_path,
                 "document_type": ocr_result["document_type"],
                 "formData": ocr_data
             }

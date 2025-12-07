@@ -18,6 +18,7 @@ from services.validation import (
 )
 from services.check_if_report_valid import check_if_report_valid, check_if_wyjasnienia_valid
 from services.pdf_filler import generate_filled_pdf
+from services.wyjasnienia_filler import generate_wyjasnienia_pdf
 
 logger = logging.getLogger(__name__)
 
@@ -213,9 +214,9 @@ async def submit_wyjasnienia(form_data: WyjasnieniaPoszkodowanego):
     Flow:
     1. Validates the form data against JSON schema (schema_wyjasnienia.json)
     2. Saves the form as JSON
-    3. TODO: Validates with LLM (check_if_wyjasnienia_valid)
-    4. TODO: If validation passes, generates PDF file
-    5. TODO:Returns success response with the PDF filename
+    3. Validates with LLM (check_if_wyjasnienia_valid)
+    4. If validation passes, generates filled PDF file
+    5. Returns success response with the PDF filename
     """
     form_dict = form_data.model_dump()
     
@@ -278,19 +279,52 @@ async def submit_wyjasnienia(form_data: WyjasnieniaPoszkodowanego):
             }
         )
     
-    # Step 4: Generate word / PDF file - musi być idealnie jak w ustawie
-    # TODO: Implement PDF filling for Wyjaśnienia poszkodowanego
+    # Step 4: Generate PDF file
+    try:
+        pdf_path = generate_wyjasnienia_pdf(
+            form_data=form_dict,
+            output_dir=FILLED_FORMS_DIR,
+            filename_prefix=f"WYJASNIENIA_{timestamp}"
+        )
+        pdf_filename = pdf_path.name
+        logger.info(f"Generated Wyjaśnienia PDF: {pdf_filename}")
+    except FileNotFoundError as e:
+        logger.error(f"Wyjaśnienia PDF template not found: {e}")
+        return FormResponse(
+            success=True,
+            message="Formularz zweryfikowany, ale generowanie PDF nie powiodło się: brak szablonu",
+            data={
+                "valid": True,
+                "comment": validity_check.comment,
+                "fieldErrors": field_errors,
+                "json_filename": json_filename,
+                "pdf_filename": None
+            }
+        )
+    except Exception as e:
+        logger.error(f"Wyjaśnienia PDF generation failed: {e}")
+        return FormResponse(
+            success=True,
+            message=f"Formularz zweryfikowany, ale generowanie PDF nie powiodło się: {str(e)}",
+            data={
+                "valid": True,
+                "comment": validity_check.comment,
+                "fieldErrors": field_errors,
+                "json_filename": json_filename,
+                "pdf_filename": None
+            }
+        )
     
-    # Step 5: Return success (PDF generation not yet implemented)
+    # Step 5: Return success with PDF filename
     return FormResponse(
         success=True,
-        message="Formularz 'Wyjaśnienia poszkodowanego' został zweryfikowany pomyślnie. Generowanie PDF nie jest jeszcze zaimplementowane.",
+        message="Formularz 'Wyjaśnienia poszkodowanego' został zweryfikowany pomyślnie i PDF został wygenerowany.",
         data={
             "valid": True,
             "comment": validity_check.comment,
             "fieldErrors": field_errors,
             "json_filename": json_filename,
-            "pdf_filename": None  # TODO: Add when PDF generation is implemented
+            "pdf_filename": pdf_filename
         }
     )
 
